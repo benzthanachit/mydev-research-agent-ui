@@ -11,6 +11,8 @@ export default function Home() {
   const [apiKey, setApiKey] = useState("");
   const [obsidianPath, setObsidianPath] = useState("");
   const [notebookWebhook, setNotebookWebhook] = useState("");
+  const [notebookMode, setNotebookMode] = useState("webhook"); // 'webhook' | 'mcp'
+  const [notebookId, setNotebookId] = useState("");
   
   // Chapter State Machine States
   const [currentChapter, setCurrentChapter] = useState("Chapter 3: Research Methodology");
@@ -40,6 +42,8 @@ export default function Home() {
       setApiKey(localStorage.getItem("meow_gemini_key") || "");
       setObsidianPath(localStorage.getItem("meow_obsidian_path") || "");
       setNotebookWebhook(localStorage.getItem("meow_notebook_webhook") || "");
+      setNotebookMode(localStorage.getItem("meow_notebook_mode") || "webhook");
+      setNotebookId(localStorage.getItem("meow_notebook_id") || "");
     }
   }, []);
 
@@ -57,6 +61,16 @@ export default function Home() {
   const handleSetNotebookWebhook = (val: string) => {
     setNotebookWebhook(val);
     localStorage.setItem("meow_notebook_webhook", val);
+  };
+
+  const handleSetNotebookMode = (val: string) => {
+    setNotebookMode(val);
+    localStorage.setItem("meow_notebook_mode", val);
+  };
+
+  const handleSetNotebookId = (val: string) => {
+    setNotebookId(val);
+    localStorage.setItem("meow_notebook_id", val);
   };
 
   // State Machine Trigger 1: Scribe Cat Drafts
@@ -212,29 +226,48 @@ export default function Home() {
         body: JSON.stringify(obsidianBody)
       });
 
-      // 2. Upload finalized draft to NotebookLM cold storage webhook
-      const notebookBody = {
-        chapter: currentChapter,
-        title: variables.title,
-        content: draft,
-        webhookUrl: notebookWebhook
-      };
-
-      const notebookRes = await fetch("/api/notebooklm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(notebookBody)
-      });
+      // 2. Upload finalized draft to NotebookLM cold storage (MCP vs Webhook/Archive)
+      let notebookRes;
+      if (notebookMode === "mcp") {
+        setDialogueText("🤖 Triggering direct MCP tool 'add_source' to sync chapter content straight into Google NotebookLM...");
+        notebookRes = await fetch("/api/notebooklm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add_source",
+            chapter: currentChapter,
+            title: variables.title,
+            content: draft,
+            notebookId: notebookId
+          })
+        });
+      } else {
+        notebookRes = await fetch("/api/notebooklm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "archive",
+            chapter: currentChapter,
+            title: variables.title,
+            content: draft,
+            webhookUrl: notebookWebhook
+          })
+        });
+      }
 
       const notebookData = await notebookRes.json();
 
       if (notebookData.success) {
         setStage("saved");
-        setDialogueText(`🐾 Locked & Loaded! ${currentChapter} has been fully saved. Proceed to select the next chapter and build out your manuscript!`);
+        if (notebookMode === "mcp") {
+          setDialogueText(`🔒 Direct MCP Ingestion complete! '${currentChapter}' has been uploaded straight into your Google NotebookLM via PleasePrompto server!`);
+        } else {
+          setDialogueText(`🐾 Locked & Loaded! ${currentChapter} has been fully saved. Proceed to select the next chapter and build out your manuscript!`);
+        }
         // Increment trigger to refresh MemoryExplorer lists immediately
         setRefreshTrigger(prev => prev + 1);
       } else {
-        setDialogueText(`Chapter locked, but cold storage webhook returned an issue.`);
+        setDialogueText(`Chapter locked locally, but NotebookLM sync failed: ${notebookData.error || "connection error"}`);
       }
 
     } catch (error: any) {
@@ -255,10 +288,10 @@ export default function Home() {
   };
 
   return (
-    <div className="flex-1 w-full bg-[#0e0f15] py-8 px-4 md:px-8 font-vt323 antialiased">
+    <div className="flex-1 w-full bg-[#0e0f15] py-4 px-2 md:py-6 md:px-6 lg:px-8 font-vt323 antialiased">
       
       {/* Centralized Desktop Area */}
-      <main className="max-w-6xl mx-auto flex flex-col gap-6">
+      <main className="w-full max-w-[98vw] mx-auto flex flex-col gap-6">
         
         {/* Game Title Bar */}
         <header className="retro-border-single p-4 bg-[#12131a] flex flex-col md:flex-row items-center justify-between gap-4">
@@ -331,6 +364,10 @@ export default function Home() {
               setObsidianPath={handleSetObsidianPath}
               notebookWebhook={notebookWebhook}
               setNotebookWebhook={handleSetNotebookWebhook}
+              notebookMode={notebookMode}
+              setNotebookMode={handleSetNotebookMode}
+              notebookId={notebookId}
+              setNotebookId={handleSetNotebookId}
             />
 
           </div>

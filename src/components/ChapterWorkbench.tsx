@@ -44,6 +44,10 @@ interface ChapterWorkbenchProps {
   setObsidianPath: (path: string) => void;
   notebookWebhook: string;
   setNotebookWebhook: (url: string) => void;
+  notebookMode: string;
+  setNotebookMode: (mode: string) => void;
+  notebookId: string;
+  setNotebookId: (id: string) => void;
 }
 
 export default function ChapterWorkbench({
@@ -68,9 +72,61 @@ export default function ChapterWorkbench({
   obsidianPath,
   setObsidianPath,
   notebookWebhook,
-  setNotebookWebhook
+  setNotebookWebhook,
+  notebookMode,
+  setNotebookMode,
+  notebookId,
+  setNotebookId
 }: ChapterWorkbenchProps) {
   const [activeTab, setActiveTab] = useState<"workspace" | "config" | "draft" | "review">("workspace");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authStatus, setAuthStatus] = useState("");
+
+  const handleRunAuth = async () => {
+    setAuthLoading(true);
+    setAuthStatus("Spawning browser login...");
+    try {
+      const res = await fetch("/api/notebooklm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "setup_auth" })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAuthStatus("Authentication established!");
+      } else {
+        setAuthStatus(`Failed: ${data.error || "unknown issue"}`);
+      }
+    } catch (err: any) {
+      setAuthStatus(`Error: ${err.message}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (notebookMode === "mcp") {
+      setAuthStatus("Checking local MCP health...");
+      fetch("/api/notebooklm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get_health" })
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.authenticated) {
+            setAuthStatus("Connected 🟢 (Authenticated)");
+          } else if (data.success && !data.authenticated) {
+            setAuthStatus("Requires Auth 🟡 (Run setup_auth)");
+          } else {
+            setAuthStatus("MCP Offline 🔴");
+          }
+        })
+        .catch(() => {
+          setAuthStatus("MCP Offline 🔴");
+        });
+    }
+  }, [notebookMode]);
 
   const handleVariableChange = (field: string, val: string) => {
     onVariablesChange({
@@ -510,21 +566,86 @@ export default function ChapterWorkbench({
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 <label className="font-press-start text-[9px] text-slate-300">
-                  NOTEBOOKLM COLD STORAGE WEBHOOK:
+                  NOTEBOOKLM CONNECTION TYPE:
                 </label>
-                <input
-                  type="text"
-                  value={notebookWebhook}
-                  onChange={(e) => setNotebookWebhook(e.target.value)}
-                  placeholder="e.g. https://api.notebooklm.google.com/webhook/..."
-                  className="retro-input w-full placeholder-slate-700"
-                />
+                <select
+                  value={notebookMode}
+                  onChange={(e) => setNotebookMode(e.target.value)}
+                  className="retro-input w-full cursor-pointer bg-black"
+                >
+                  <option value="webhook">Webhook / Local Folder Archival</option>
+                  <option value="mcp">Direct Local MCP Server (PleasePrompto/notebooklm-mcp)</option>
+                </select>
                 <p className="text-xs text-slate-500 font-mono">
-                  Finalized locked chapters trigger a POST webhook. Backed up locally to <code className="text-retro-primary">notebooklm-cold-storage</code> within the workspace directory.
+                  Select how finalized chapters are archived: either via local files/webhooks or directly using the PleasePrompto local MCP browser server.
                 </p>
               </div>
+
+              {notebookMode === "mcp" ? (
+                <div className="flex flex-col gap-4 border-2 border-dashed border-retro-border/40 p-4 bg-black/20">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-press-start text-[9px] text-purple-400">
+                      GOOGLE NOTEBOOK ID OR URL (OPTIONAL):
+                    </label>
+                    <input
+                      type="text"
+                      value={notebookId}
+                      onChange={(e) => setNotebookId(e.target.value)}
+                      placeholder="e.g. 1a2b3c4d-..."
+                      className="retro-input w-full placeholder-slate-700 font-mono text-sm"
+                    />
+                    <p className="text-xs text-slate-500 font-mono">
+                      If specified, direct MCP will ingest sources specifically to this notebook. Otherwise, it defaults to the active local session.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 border-t border-retro-border/20 pt-4">
+                    <label className="font-press-start text-[9px] text-slate-300">
+                      Local MCP Google Authentication setup:
+                    </label>
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <button
+                        onClick={handleRunAuth}
+                        disabled={authLoading}
+                        className="retro-btn bg-[#251d38] border-purple-500 text-purple-200"
+                        type="button"
+                      >
+                        {authLoading ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : null}
+                        ⚡️ RUN GOOGLE AUTH (setup_auth)
+                      </button>
+                      
+                      {authStatus && (
+                        <span className="font-mono text-xs text-retro-primary bg-[#0e0f15] border border-retro-border px-2 py-1">
+                          {authStatus}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 font-mono mt-1">
+                      Runs the MCP Chrome browser uploader. A Chromium window will launch for you to complete your secure Google Login (required once).
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <label className="font-press-start text-[9px] text-slate-300">
+                    NOTEBOOKLM COLD STORAGE WEBHOOK:
+                  </label>
+                  <input
+                    type="text"
+                    value={notebookWebhook}
+                    onChange={(e) => setNotebookWebhook(e.target.value)}
+                    placeholder="e.g. https://api.notebooklm.google.com/webhook/..."
+                    className="retro-input w-full placeholder-slate-700"
+                  />
+                  <p className="text-xs text-slate-500 font-mono">
+                    Finalized locked chapters trigger a POST webhook. Backed up locally to <code className="text-retro-primary">notebooklm-cold-storage</code> within the workspace directory.
+                  </p>
+                </div>
+              )}
 
             </div>
 
