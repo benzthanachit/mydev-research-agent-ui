@@ -76,12 +76,12 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
       });
       const data = await res.json();
       if (data.error) {
-        setFileContent(`Error loading file: ${data.error}`);
+        setFileContent(`เกิดข้อผิดพลาดในการโหลดไฟล์: ${data.error}`);
       } else {
         setFileContent(data.content || "");
       }
     } catch (err: any) {
-      setFileContent(`Error loading file: ${err.message}`);
+      setFileContent(`เกิดข้อผิดพลาดในการโหลดไฟล์: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +102,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
       {/* Header */}
       <div className="flex justify-between items-center border-b border-retro-border/30 pb-3">
         <h3 className="font-press-start text-xs text-retro-primary flex items-center gap-2">
-          <Database className="w-4 h-4" /> MEMORY ARCHIVE EXPLORER
+          <Database className="w-4 h-4" /> คลังความจำการทำงาน & เอกสารวิจัย 🐾
         </h3>
         
         <div className="flex gap-2">
@@ -111,13 +111,13 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
             className="retro-btn py-1 px-3 text-[9px] bg-slate-800 border-slate-700 flex items-center gap-1 font-mono"
             disabled={isLoading}
           >
-            <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} /> REFRESH
+            <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} /> โหลดข้อมูลใหม่
           </button>
         </div>
       </div>
 
       {/* Internal Navigation */}
-      <div className="flex gap-2 font-mono text-sm border-b border-retro-border/20 pb-2">
+      <div className="flex flex-col sm:flex-row gap-2 font-mono text-sm border-b border-retro-border/20 pb-2">
         <button
           onClick={() => {
             setActiveView("obsidian");
@@ -128,7 +128,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
             activeView === "obsidian" ? "border-retro-primary text-retro-primary bg-black/30" : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
-          <Folder className="w-4 h-4" /> [OBSIDIAN] Working Memory Vault
+          <Folder className="w-4 h-4" /> [OBSIDIAN] คลังความรู้ & ประวัติต้นฉบับ
         </button>
         <button
           onClick={() => {
@@ -140,14 +140,14 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
             activeView === "notebook" ? "border-purple-400 text-purple-400 bg-black/30" : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
-          <Layers className="w-4 h-4" /> [NOTEBOOKLM] Cold Storage
+          <Layers className="w-4 h-4" /> [NOTEBOOKLM] คลังบันทึกที่แช่แข็งไว้
         </button>
       </div>
 
       {error && (
         <div className="p-3 bg-red-950/20 border border-red-800 text-red-300 font-mono text-xs flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-          <span>Error loading vault: {error} (Falling back to local project folder storage)</span>
+          <span>ไม่พบพาธคลังเก็บ: {error} (ปรับมาใช้งานคลังเก็บแบบจำลองภายในโปรเจกต์แทนนะคะเหมียว)</span>
         </div>
       )}
 
@@ -157,7 +157,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
         {/* Left list: Directory Tree */}
         <div className="md:col-span-1 border-2 border-retro-border bg-black/30 p-3 min-h-[250px] max-h-[350px] overflow-y-auto">
           <p className="font-press-start text-[8px] text-slate-500 uppercase border-b border-retro-border/20 pb-1 mb-2">
-            Files in Storage:
+            รายการเอกสารความรู้:
           </p>
 
           <div className="flex flex-col gap-1">
@@ -173,7 +173,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
                   >
                     <FileText className="w-4 h-4 flex-shrink-0 text-slate-400" />
                     <div className="truncate flex-1">
-                      <div>{file.name}</div>
+                      <div className="truncate">{file.name}</div>
                       <div className="text-[9px] opacity-40 font-sans">
                         {(file.size / 1024).toFixed(1)} KB - {new Date(file.mtime).toLocaleDateString()}
                       </div>
@@ -182,7 +182,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
                 ))
               ) : (
                 <div className="text-center py-8 text-xs text-slate-600 font-mono">
-                  No files found. Write a decision log on the Workbench tab!
+                  ไม่พบไฟล์เลยค่ะทาส! ทดลองกดแท็บนำเข้าด้านซ้ายเพื่อป้อนคลังความรู้กันก่อนนะคะเหมียว
                 </div>
               )
             ) : (
@@ -193,9 +193,9 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
                     onClick={() => {
                       setSelectedFile(file.name);
                       setFileContent(
-                        `# LOCKED COLD STORAGE ARCHIVE\n\nChapter: ${file.chapter}\nArchived At: ${new Date(
+                        `# รายการเอกสารแช่แข็งวิจัยแบบเย็น (LOCKED COLD STORAGE)\n\nบทความเป้าหมาย: ${file.chapter}\nแช่แข็งเมื่อวันที่: ${new Date(
                           file.lockedAt
-                        ).toLocaleString()}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nFinalized file resides in workspace at:\n\`notebooklm-cold-storage/${file.name}\``
+                        ).toLocaleString()}\nขนาดไฟล์: ${(file.size / 1024).toFixed(2)} KB\n\nเอกสารร่างวิจัยฉบับเต็มฉบับทางการถูกเก็บไว้ที่:\n\`notebooklm-cold-storage/${file.name}\``
                       );
                     }}
                     className={`w-full text-left p-2 font-mono text-xs flex items-center gap-2 border border-transparent truncate hover:bg-retro-panel-light hover:border-slate-600 ${
@@ -204,7 +204,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
                   >
                     <FileText className="w-4 h-4 flex-shrink-0 text-purple-400" />
                     <div className="truncate flex-1">
-                      <div>{file.name}</div>
+                      <div className="truncate">{file.name}</div>
                       <div className="text-[9px] opacity-40 font-sans">
                         {(file.size / 1024).toFixed(1)} KB - {new Date(file.lockedAt).toLocaleDateString()}
                       </div>
@@ -213,7 +213,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
                 ))
               ) : (
                 <div className="text-center py-8 text-xs text-slate-600 font-mono">
-                  No locked chapters yet. Approve a chapter fully to freeze it!
+                  ยังไม่มีบทวิจัยที่ล็อกเกณฑ์ผ่านเลยเหมียว! ร่างและกดรับการอนุมัติให้จบขั้นตอนก่อนนะคะ
                 </div>
               )
             )}
@@ -223,11 +223,11 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
         {/* Right view: File Reader panel */}
         <div className="md:col-span-2 flex flex-col border-2 border-retro-border bg-black/50 p-4 min-h-[250px] max-h-[350px]">
           <div className="flex items-center justify-between border-b border-retro-border/20 pb-2 mb-2">
-            <span className="font-press-start text-[8px] text-slate-400">
-              FILE READER: {selectedFile || "None Selected"}
+            <span className="font-press-start text-[8px] text-slate-400 truncate max-w-[70%]">
+              เปิดอ่านไฟล์: {selectedFile || "ยังไม่ได้เลือกไฟล์ความจำ"}
             </span>
             <span className="font-mono text-[10px] text-slate-500">
-              Format: Markdown
+              รูปแบบ: Markdown (.md)
             </span>
           </div>
 
@@ -243,7 +243,7 @@ export default function MemoryExplorer({ obsidianPath, notebookWebhook, refreshT
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-600 font-mono text-center">
                 <FileText className="w-8 h-8 opacity-30 mb-1" />
-                Select a file from the explorer list on the left to read its contents.
+                เลือกไฟล์คลังความรู้จากรายการแถบซ้ายมือ เพื่อเปิดระบบอ่านเนื้อหาผ่านคอนโซลหลักค่ะเหมียว!
               </div>
             )}
           </div>

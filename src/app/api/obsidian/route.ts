@@ -31,22 +31,27 @@ export async function POST(req: Request) {
     }
 
     if (action === "write") {
-      // Format markdown logs beautifully with timestamps
+      const { overwrite = false } = body;
       const timestamp = new Date().toISOString().replace("T", " ").substring(0, 19);
       let formattedContent = content;
       
-      // If the file already exists, let's append instead of overwriting, unless requested otherwise
-      let exists = false;
-      try {
-        await fs.access(targetFilePath);
-        exists = true;
-      } catch {}
-
-      if (exists) {
-        const currentData = await fs.readFile(targetFilePath, "utf-8");
-        formattedContent = `${currentData}\n\n## Log Added: [${timestamp}]\n${content}`;
+      if (overwrite) {
+        // Direct clean write/overwrite without automatic appending and headers
+        formattedContent = content;
       } else {
-        formattedContent = `# Meow-nuscript Foundry Decision Logs\nCreated: [${timestamp}]\n\n## Initial Log: [${timestamp}]\n${content}`;
+        // Standard append logic for standard decision logs
+        let exists = false;
+        try {
+          await fs.access(targetFilePath);
+          exists = true;
+        } catch {}
+
+        if (exists) {
+          const currentData = await fs.readFile(targetFilePath, "utf-8");
+          formattedContent = `${currentData}\n\n## Log Added: [${timestamp}]\n${content}`;
+        } else {
+          formattedContent = `# Meow-nuscript Foundry Decision Logs\nCreated: [${timestamp}]\n\n## Initial Log: [${timestamp}]\n${content}`;
+        }
       }
 
       await fs.writeFile(targetFilePath, formattedContent, "utf-8");

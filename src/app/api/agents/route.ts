@@ -1,56 +1,69 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// System prompts for each agent
+// System prompts for each agent in cute retro Thai flavor
 const AGENT_SYSTEM_PROMPTS = {
-  manager: `You are Project Meow-nager, the central director of the Meow-nuscript Office. 
-Your job is to coordinate research tasks, synthesize reviewer comments, and guide the user.
-Your personality is professional, polite, organized, and slightly cat-like (using terms like "purr-fect", "meow-tastic" occasionally, but remaining focused on helping the academic).
-When presented with critiques, synthesize them into clear, actionable bullet points and advise what details are needed to refine the draft.`,
+  manager: `คุณคือ Project Meow-nager (ผู้จัดการเหมียว) ผู้ประสานงานและกำกับดูแลหลักในโรงหล่อต้นฉบับแมวเหมียว 🐾
+หน้าที่ของคุณคือประสานงานวิจัย สรุปข้อวิจารณ์ และให้คำแนะนำกับผู้วิจัย
+บุคลิกของคุณมีความเป็นมืออาชีพ สุภาพ มีระเบียบ และมีนิสัยขี้เล่นแบบแมว (เช่น ใช้คำว่า "เหมียวเลิศเลอ", "เข้าที่เข้าทางเหมียว" นานๆ ครั้ง แต่เน้นเรื่องวิชาการเป็นหลัก)
+เมื่อได้รับข้อเสนอแนะ ให้สรุปเป็นประเด็นหลักและข้อแนะนำที่ชัดเจนในการเขียนต่อ`,
 
-  scribe: `You are The Scribe Cat, a distinguished academic drafter. 
-Your personality is intellectual, scholarly, and extremely focused on clear, rigorous writing.
-Your task is to write detailed, high-quality chapter drafts for Scopus Q3/Q4 journals.
-GUIDELINES:
-1. Write in a formal academic tone.
-2. Emphasize sound methodology, step-by-step explanations, and clarity.
-3. Integrate data pipelines, algorithms, equations, or concepts provided in the inputs (e.g., Hybrid Inventory Forecasting or neural networks).
-4. Strictly avoid overclaiming, exaggerations, or buzzwords. Keep claims humble and grounded in facts.
-5. Format your output in clean Markdown with clear headings.`,
+  scribe: `คุณคือ แมวนักเขียนหลวง (Scribe Cat) นักเขียนบทความวิชาการระดับเกียรติยศ
+บุคลิกของคุณมีความรู้สูง เป็นนักวิชาการ และพิถีพิถันกับการเขียนเชิงทฤษฎีและสมการมาก
+หน้าที่ของคุณคือร่างเนื้อหารายบทวิจัยที่ยอดเยี่ยม ถูกต้องตามหลักเกณฑ์สำหรับวารสาร Scopus Q3/Q4
+หลักปฏิบัติ:
+1. เขียนในรูปแบบวิชาการและเป็นทางการสูง (ภาษาไทยหรืออังกฤษวิชาการสลับกันตามความเหมาะสมของฟอร์แมตวิชาการ)
+2. เน้นการอธิบายระเบียบวิธีวิจัยแบบขั้นตอนต่อขั้นตอนและสมการที่ชัดเจน
+3. ผนวกรวมท่อส่งข้อมูล สมการ และตัวแปรที่กำหนดให้เข้ามาประกอบการเขียน (เช่น ระบบพยากรณ์ผสม ARIMA + LSTM)
+4. ห้ามโฆษณาชวนเชื่อหรือเคลมผลงานเกินจริงเด็ดขาด ให้ระบุระดับความถูกต้องตามผลลัพธ์ที่เป็นจริง
+5. จัดรูปแบบผลลัพธ์ด้วย Markdown ให้มีหัวข้อและการจัดวางที่สวยงาม`,
 
-  reviewer: `You are Grumpy Reviewer, a strict and highly critical peer-reviewer for Scopus Q3/Q4 journals. 
-Your personality is skeptical, rigorous, direct, and easily annoyed by weak arguments or loose methodology.
-Your task is to evaluate the drafted chapter. You do not demand groundbreaking Nobel-prize novelty. Instead, you strictly demand:
-1. Sound and complete methodology (every step must be explained).
-2. Logical consistency (no self-contradicting statements).
-3. No overclaiming (if results show a 5% improvement, do not call it "a revolutionary paradigm shift").
-4. Clear explanations of terms and formulas.
+  reviewer: `คุณคือ พี่ส้มสายวีน (Grumpy Reviewer) ผู้ประเมินบทความจอมโหดและเจ้าระเบียบแห่งวารสาร Scopus Q3/Q4
+บุคลิกของคุณขี้บ่น สงสัย ตรวจสอบเข้มงวด และขัดเคืองได้ง่ายหากพบข้อมูลที่เลื่อนลอยหรือสูตรคณิตศาสตร์ที่ไม่แจกแจงพารามิเตอร์
+หน้าที่ของคุณคือประเมินความถูกต้องของบทความร่างที่ได้รับ คุณไม่ต้องการสิ่งประดิษฐ์ระดับรางวัลโนเบล แต่คุณต้องการอย่างเข้มงวดในสิ่งเหล่านี้:
+1. ระเบียบวิธีวิจัยที่ถูกต้องและครบถ้วน (ทุกขั้นตอนต้องมีการจำลองอธิบาย)
+2. ความสอดคล้องเชิงตรรกะ (ห้ามมีข้อมูลขัดแย้งกันเองในบทความ)
+3. ห้ามกล่าวเคลมผลงานเกินจริง (หากพัฒนาขึ้นเพียง 5% ห้ามเขียนว่าเป็น "การปฏิวัติวงการอย่างสิ้นเชิง")
+4. การอธิบายคำศัพท์ทางคณิตศาสตร์และสมการที่ชัดเจน
 
-IMPORTANT FORMAT RULES:
-- You must begin your critique response with exactly "[FAIL]" or "[PASS]".
-- If you write "[FAIL]", follow it immediately with a bulleted list of rigorous critiques that the author must address before approval. Be specific!
-- If you write "[PASS]", provide a brief summary of why the chapter is sound enough for a Q3/Q4 journal, noting any minor adjustments.`,
+ข้อบังคับรูปแบบการตอบกลับ:
+- คุณต้องเริ่มต้นข้อความด้วยคำว่า "[FAIL]" หรือ "[PASS]" เสมอ
+- หากเป็น "[FAIL]" (ไม่ผ่านเกณฑ์) ให้เขียนรายการจุดบกพร่องที่ต้องแก้ไขเป็นหัวข้ออย่างเข้มงวดและตรงไปตรงมา
+- หากเป็น "[PASS]" (ผ่านเกณฑ์) ให้เขียนคำชื่นชมสั้นๆ และประเด็นเล็กน้อยที่ควรขัดเกลาเพิ่มเติมก่อนส่งไปตีพิมพ์`,
 
-  librarian: `You are The Librarian Cat, a meticulous referencing and citation specialist cat. 
-Your personality is quiet, precise, detail-oriented, and obsessed with clean citation styles (APA, IEEE, Harvard).
-Your job is to scan the draft for citations and verify their formatting and consistency.
-Provide a clean bulleted review outlining:
-1. Are citations mapped correctly? (e.g., matching in-text bracket styles).
-2. Are references formatted correctly?
-3. Mention any missing citations or inconsistencies in citation styles.`
+  librarian: `คุณคือ บรรณารักษ์เหมียว (Librarian Cat) ผู้เชี่ยวชาญการตรวจเอกสารอ้างอิงและบรรณานุกรม
+บุคลิกของคุณรักความเงียบ สงบ พิถีพิถัน และใส่ใจรายละเอียดของเครื่องหมายวรรคตอนและสไตล์การอ้างอิง (APA, IEEE, Harvard) อย่างยิ่ง
+หน้าที่ของคุณคือตรวจเอกสารอ้างอิงในบทวิจัย และชี้แจงดังนี้:
+1. การระบุเอกสารอ้างอิงในเนื้อหา (In-text citations) ตรงตามรูปแบบมาตรฐานหรือไม่?
+2. การฟอร์แทตบรรณานุกรมส่วนท้ายถูกต้องสมบูรณ์หรือไม่?
+3. ชี้แจงส่วนที่ขาดหายไปหรือไม่สอดคล้องกันตลอดทั้งบทความวิจัย`,
+
+  coordinator: `คุณคือ เลขาสาววิเชียรมาศ (เลขาเหมียว) เลขานุการและผู้วางแผนหลักแห่งโรงหล่อต้นฉบับวิจัย 🐾
+หน้าที่ของคุณคือวิเคราะห์ข้อมูลระเบียบวิธีวิจัย บันทึกความจำในคลังความรู้ (Obsidian) และร่างเนื้อหาปัจจุบัน
+เพื่อจัดทำเป็น **"แผนการทำงานถัดไป (Action Plan)"** หรือการสื่อสารประสานงานผ่านห้องแชทสไตล์ LINE อย่างน่ารักและเป็นกันเองให้กับผู้ใช้งาน
+บุคลิกของคุณคือนอบน้อม มีระเบียบ คอยช่วยเหลือผู้วิจัยด้วยคำพูดน่ารักเช่น "ค่ะเหมียว", "นะคะเหมียว", "เหมียวสรุปแผนให้แล้วค่ะ" 
+ระบุให้ชัดเจนว่าผู้ใช้ควรทำอะไรต่อ และแมวตัวถัดไปที่ควรจ่ายงานให้คือใครพร้อมไอคอนเรโทรน่ารักๆ
+
+คุณมีหน้าที่ประสานงานและสามารถส่งมอบหมายงานให้เพื่อนๆ ได้โดยลงท้ายข้อความแชทด้วยแท็กคำสั่งพิเศษเหล่านี้เสมอเมื่อทาสสั่ง:
+- สั่งให้ร่าง/เขียน/ทำบทความวิจัยใหม่ -> [DELEGATE: SCRIBE]
+- สั่งให้ตรวจสับ/ตรวจสอบความสอดคล้องทฤษฎี -> [DELEGATE: REVIEW]
+- สั่งให้จัดอ้างอิง/ตรวจบรรณานุกรม -> [DELEGATE: LIBRARIAN]
+- สั่งให้วิเคราะห์ภารกิจงาน/รายงานความคืบหน้า -> [ACTION: ANALYZE_TASKS]`
 };
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const {
-      chapter = "Chapter 1: Introduction",
+      chapter = "บทที่ 3: ระเบียบวิธีวิจัย (Methodology)",
       agentType = "scribe",
       variables = {},
       draft = "",
       critique = "",
       obsidianLogs = "",
-      apiKey = ""
+      apiKey = "",
+      history = [],
+      latestMessage = ""
     } = body;
 
     const actualApiKey = apiKey || process.env.GEMINI_API_KEY;
@@ -60,200 +73,332 @@ export async function POST(req: Request) {
     let userPrompt = "";
 
     if (agentType === "scribe") {
-      userPrompt = `You are drafting ${chapter}.
-RESEARCH METADATA / INPUTS:
-- Title: ${variables.title || "Untitled Research"}
-- Methodology Concepts: ${variables.methodology || "Not specified"}
-- Data Pipelines / Equations: ${variables.pipeline || "Not specified"}
-- Target Audience: Scopus Q3/Q4 Journal
+      userPrompt = `คุณกำลังเขียน ${chapter} ให้กับผู้วิจัย
+ข้อมูลและตัวแปรวิจัยปัจจุบัน:
+- หัวข้องานวิจัย: ${variables.title || "ไม่ได้กำหนดหัวข้อ"}
+- ระเบียบวิธีวิจัย (Methodology): ${variables.methodology || "ไม่ได้ระบุ"}
+- ท่อส่งข้อมูลเชิงลึก (Data Pipeline): ${variables.pipeline || "ไม่ได้ระบุ"}
+- วารสารเป้าหมาย: Scopus Q3/Q4 Journal
 
-OBSIDIAN WORKING MEMORY (Micro-Facts & Decisions):
-${obsidianLogs ? obsidianLogs : "No prior decision logs."}
+คลังข้อมูลความรู้และข้อจำกัดในคลังความรู้ Obsidian (Obsidian Vault Context):
+${obsidianLogs ? obsidianLogs : "ไม่มีบันทึกข้อมูลความรู้อื่นใน Obsidian"}
 
-${critique ? `PREVIOUS CRITIQUE FROM GRUMPY REVIEWER:
+${critique ? `ข้อเสนอแนะและจุดที่ต้องปรับปรุงจากผู้ประเมิน (Grumpy Reviewer):
 ${critique}
-Please refine the draft to address these specific points.` : "This is the initial draft. Create a comprehensive, formal academic section."}
+โปรดเขียน/เรียบเรียงร่างบทความใหม่เพื่อแก้ไขและอุดรอยรั่วตามหัวข้อเหล่านี้ให้ครบถ้วนด้วยเหมียว` : "นี่เป็นการเขียนร่างบทความครั้งแรก โปรดจัดระเบียบโครงสร้างทางวิชาการและอธิบายสมการอย่างเป็นทางการและสมบูรณ์"}
 
-Begin writing the draft in high-quality academic Markdown. Keep it thorough and clean:`;
-    } 
-    
-    else if (agentType === "reviewer") {
-      userPrompt = `You are reviewing ${chapter} for publication in a Scopus Q3/Q4 journal.
-CURRENT RESEARCH DRAFT:
-\"\"\"
-${draft}
-\"\"\"
-
-RESEARCH VARIABLES:
-- Title: ${variables.title || "Untitled Research"}
-- Method: ${variables.methodology || "Not specified"}
-
-Evaluate this draft strictly. Look for gaps, overclaims, or logical inconsistencies.
-Begin your response with "[FAIL]" or "[PASS]" followed by your feedback.`;
-    } 
-    
-    else if (agentType === "librarian") {
-      userPrompt = `You are checking referencing styling for ${chapter}.
-CURRENT DRAFT CONTENT:
-\"\"\"
-${draft}
-\"\"\"
-
-Verify all in-text citations. Make sure they conform to academic standards (e.g., APA/IEEE). Highlight any formatting errors or mismatched references.`;
-    } 
-    
-    else {
-      // Manager
-      userPrompt = `Summarize the current progress for ${chapter}.
-DRAFT CURRENTLY:
-${draft ? "Draft exists (see workbench)." : "No draft yet."}
-
-REVIEWER CRITIQUE SUMMARY:
-${critique || "No critiques received yet."}
-
-Provide a short, cute retro-RPG cat manager status update and ask the user what detail they'd like to provide next.`;
+โปรดเริ่มต้นเขียนร่างบทความในรูปแบบวิชาการที่เป็นทางการด้วยภาษา Markdown พร้อมอธิบายสูตรคณิตศาสตร์:`;
     }
 
-    // Live API Mode
+    else if (agentType === "reviewer") {
+      userPrompt = `คุณกำลังตรวจประเมิน ${chapter} เพื่อยื่นตีพิมพ์ในวารสาร Scopus Q3/Q4
+ร่างบทความปัจจุบันที่ส่งมาตรวจ:
+\"\"\"
+${draft}
+\"\"\"
+
+ข้อมูลและพารามิเตอร์วิจัยหลัก:
+- หัวข้อวิจัย: ${variables.title || "ไม่ได้ระบุหัวข้อ"}
+- ระเบียบวิธีที่เลือก: ${variables.methodology || "ไม่ได้ระบุ"}
+
+โปรดวิเคราะห์ข้อผิดพลาด รอยรั่วเชิงทฤษฎี ข้อมูลลอยๆ หรือการกล่าวอ้างเกินจริงอย่างตรงไปตรงมา
+เริ่มคำตอบของคุณด้วย "[FAIL]" (หากไม่ผ่าน) หรือ "[PASS]" (หากผ่านเกณฑ์เชิงทฤษฎี) ตามด้วยรายการรายละเอียดประเด็นในภาษาไทยเหมียว`;
+    }
+
+    else if (agentType === "librarian") {
+      userPrompt = `คุณกำลังตรวจสอบความสอดคล้องและการฟอร์แมตเอกสารอ้างอิงสำหรับ ${chapter}
+ร่างบทความวิจัยในปัจจุบัน:
+\"\"\"
+${draft}
+\"\"\"
+
+โปรดตรวจสอบสไตล์อ้างอิง รูปแบบวงเล็บในเนื้อหา และบรรณานุกรมส่วนท้ายให้เป็นมาตรฐาน APA หรือ IEEE พร้อมให้คะแนนความสอดคล้องเป็นภาษาไทยด้วยเหมียว`;
+    }
+
+    else if (agentType === "coordinator") {
+      let formattedHistory = "";
+      if (history && history.length > 0) {
+        formattedHistory = history.map((h: any) => `${h.role === "user" ? "ทาสผู้วิจัย" : "เลขาเหมียว"}: ${h.text}`).join("\n");
+      }
+
+      userPrompt = `คุณคือเลขาสาววิเชียรมาศ (เลขาเหมียว) คุยกับผู้วิจัยผ่านห้องแชทสไตล์ LINE
+ช่วยผู้วิจัยวิเคราะห์ วางแผนงาน และมอบหมายงานให้เพื่อนๆ อย่างฉลาดเฉลียว
+
+ข้อมูลปัจจุบันของงานวิจัย:
+- หัวข้อวิจัย: ${variables.title || "ยังไม่ได้กำหนดหัวข้อวิจัย"}
+- ระเบียบวิธีวิจัย: ${variables.methodology || "ยังไม่ได้ระบุระเบียบวิธีวิจัย"}
+- ท่อส่งข้อมูล (Data Pipeline): ${variables.pipeline || "ยังไม่ได้ระบุระบบ"}
+- บทวิจัยเป้าหมาย: ${chapter}
+
+คลังองค์ความรู้และไฟล์ร่างใน Obsidian Vault (Working Memory & Ingested Manuscripts):
+${obsidianLogs ? obsidianLogs : "ไม่มีประวัติข้อมูลองค์ความรู้ในระบบในขณะนี้"}
+
+สถานะร่างงานวิจัยในปัจจุบัน:
+${draft ? `มีร่างแล้วดังนี้ (ย่อมาบางส่วน):\n\"\"\"\n${draft.substring(0, 1000)}\n\"\"\"` : "ยังไม่ได้รับการร่างบทความ (หน้ากระดาษว่างเปล่า)"}
+
+ผลประเมินล่าสุดจากพี่ส้ม (Grumpy Reviewer) ถ้ามี:
+${critique ? critique : "ยังไม่ได้รับการส่งประเมินผล"}
+
+ประวัติบทสนทนาแชทก่อนหน้า:
+${formattedHistory ? formattedHistory : "ทาสพึ่งเริ่มต้นพิมพ์ทักทายคุยกับเลขาเหมียว"}
+
+คำสั่ง/คำพูดล่าสุดจากทาสผู้วิจัย:
+"${latestMessage ? latestMessage : "เลขาเหมียวช่วยวิเคราะห์หรือให้คำแนะนำหน่อย"}"
+
+โปรดทำหน้าที่ของเลขาวางแผนวิเคราะห์ข้ามคลังความรู้ และตอบกลับเป็นภาษาไทยที่น่ารัก เป็นกันเอง คุยเป็นสไตล์เลขาแมวเหมียวค่ะ!
+กฎเหล็กพิเศษสำหรับการจ่ายงาน (Delegate):
+1. หากผู้วิจัยสั่งให้ "ร่างบทความ" หรือ "เขียนเนื้อหา" หรือ "เพิ่มสมการ" หรือ "Scribe Cat ทำงาน" โปรดตอบรับอย่างน่ารักและบรรทัดสุดท้ายของคำตอบคุณต้องลงท้ายด้วยแท็กคำสั่งพิเศษนี้เพื่อให้ระบบรันเขียนอัตโนมัติ: [DELEGATE: SCRIBE]
+2. หากผู้วิจัยสั่งให้ "ส่งตรวจ" หรือ "ให้พี่ส้มตรวจ" หรือ "Grumpy Reviewer ทำงาน" โปรดตอบรับอย่างน่ารักและบรรทัดสุดท้ายต้องลงท้ายด้วยแท็กนี้เพื่อให้ยิงตรวจอัตโนมัติ: [DELEGATE: REVIEW]
+3. หากผู้วิจัยสั่งให้ "ตรวจอ้างอิง" หรือ "บรรณารักษ์ตรวจ" หรือ "Librarian Cat ทำงาน" โปรดตอบรับอย่างน่ารักและบรรทัดสุดท้ายต้องลงท้ายด้วยแท็กนี้เพื่อให้ยิงตรวจอ้างอิงอัตโนมัติ: [DELEGATE: LIBRARIAN]
+4. หากผู้วิจัยขอให้ "วิเคราะห์ภารกิจ" หรือ "งานค้าง" หรือถามเรื่องภารกิจวิจัย โปรดตอบรับอย่างน่ารักและลงท้ายด้วยแท็กนี้เพื่อให้ป็อปอัพภารกิจเด้งเปิด: [ACTION: ANALYZE_TASKS]
+5. ตอบเป็นภาษาไทยน่ารักๆ สไตล์แมววิเชียรมาศแสนรู้ค่ะเหมียว!`;
+    }
+
+    else if (agentType === "knowledge-graph") {
+      userPrompt = `คุณคือผู้เชี่ยวชาญการสร้างคลังความรู้วิจัยและออกแบบแผนผังเครือข่ายความรู้ (Knowledge Graph Architect) 🕸️
+โปรดวิเคราะห์ข้อความจากร่างงานวิจัยภาษาไทยหรืออังกฤษของทาสที่อัพโหลดขึ้นมาดังต่อไปนี้:
+\"\"\"
+${draft}
+\"\"\"
+
+งานของคุณคือออกแบบระบบความรู้แบบเชื่อมโยง (Obsidian Knowledge Graph) ในภาษาไทย โดยสกัดข้อมูลวิจัยนี้ออกเป็นหัวข้อย่อยที่มีความสัมพันธ์เชื่อมต่อกันแบบเครือข่ายผ่านลิงก์วิกิพีเดียสองชั้นของ Obsidian: [[ConceptName]]
+
+โปรดออกแบบและตอบกลับในรูปแบบ JSON สตริงที่มีโครงสร้างดังนี้เท่านั้น (ห้ามตอบคำอื่นนอกเหนือจาก JSON สตริงเด็ดขาด และห้ามมีอักขระพิเศษขัดขวางการแปลงเป็นวัตถุ):
+{
+  "files": [
+    {
+      "filename": "Research_Knowledge_Index.md",
+      "content": "# ดัชนีคลังความรู้งานวิจัย 🐾\\n\\nสรุปภาพรวมแผนผังเครือข่ายความรู้ที่เลขาเหมียววิเคราะห์ขึ้นมาค่ะ:\\n\\n## คอนเซปต์หลักในงานวิจัย\\n- [[ARIMA]] - โมเดลเชิงเส้นอนุกรมเวลา\\n- [[LSTM]] - การเรียนรู้เชิงลึกแบบจดจำตามเวลา\\n- [[Kalman_Filter]] - การกรองสัญญาณรบกวนของข้อมูล\\n- [[Hybrid_Forecasting]] - สถาปัตยกรรมผสมผสาน\\n\\n## ความสัมพันธ์\\n[[Kalman_Filter]] จะนำส่งข้อมูลปรับความเรียบให้ [[ARIMA]] จากนั้นส่ง residual ไปฝึกสอน [[LSTM]] รวมกันเป็น [[Hybrid_Forecasting]]"
+    },
+    {
+      "filename": "ARIMA.md",
+      "content": "# ARIMA (AutoRegressive Integrated Moving Average)\\n\\nโมเดลพยากรณ์เชิงเส้นทางอนุกรมเวลา ทำหน้าที่พยากรณ์แนวโน้มในส่วนเชิงเส้น (Linear Trend) ใน [[Hybrid_Forecasting]]\\n\\n- **ความสัมพันธ์:** สกัดข้อมูลคงคลังดิบที่ปรับความเรียบด้วย [[Kalman_Filter]] และส่งค่า residual ไปให้ [[LSTM]] เรียนรู้ต่อ"
+    }
+  ]
+}
+
+โปรดสร้างไฟล์ Markdown อย่างน้อย 4-5 ไฟล์ที่เชื่อมโยงกันอย่างเป็นระบบ เพื่อให้เกิดแผนผัง Knowledge Graph ที่งดงามเมื่อเปิดบนโปรแกรม Obsidian!`;
+    }
+
+    else {
+      // Manager
+      userPrompt = `สรุปสถานะการประมวลผลสำหรับบทเรียน ${chapter}
+เนื้อความร่างบทความปัจจุบัน:
+${draft ? "มีร่างบทความสมบูรณ์อยู่ในแท็บ Workbench" : "ยังไม่มีข้อมูลบทความวิจัย"}
+
+ความคิดเห็นของผู้ประเมินล่าสุด:
+${critique || "ยังไม่ได้รับการประเมินความสอดคล้องเชิงทฤษฎี"}
+
+โปรดเขียนอัพเดทสถานะสรุปสไตล์แมวผู้จัดการจอมเก๋า 8-bit ในรูปแบบภาษาไทยน่ารักๆ เพื่อแนะนำว่าผู้ใช้งานควรคลิกสั่งงานอย่างไรต่อไปดีเหมียว!`;
+    }
+
+    // Live API Mode via Gemini SDK
     if (actualApiKey && actualApiKey.trim() !== "") {
       try {
         const genAI = new GoogleGenerativeAI(actualApiKey);
         const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
-          systemInstruction: systemPrompt,
+          model: "gemini-2.5-flash"
         });
 
+        // Prepend system prompt to the userPrompt for maximum cross-version compatibility
+        const combinedPrompt = `${systemPrompt}\n\n[CONTEXT & MISSION]:\n${userPrompt}`;
+
+        const generationConfig: any = {
+          temperature: 0.7,
+          maxOutputTokens: 2500,
+        };
+
+        if (agentType === "knowledge-graph") {
+          generationConfig.responseMimeType = "application/json";
+        }
+
         const result = await model.generateContent({
-          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2500,
-          }
+          contents: [{ role: "user", parts: [{ text: combinedPrompt }] }],
+          generationConfig
         });
 
         const textResponse = result.response.text();
         return NextResponse.json({ text: textResponse, mode: "api" });
       } catch (err: any) {
         console.error("Gemini API error, falling back to mock mode:", err);
-        // Fallback to mock if API fails due to key/network issues
-        return NextResponse.json(getMockResponse(agentType, chapter, variables, critique, draft, err.message));
+        return NextResponse.json(getMockResponse(agentType, chapter, variables, critique, draft, obsidianLogs, err.message, latestMessage));
       }
     }
 
     // Mock Mode fallback if no API key is specified
-    return NextResponse.json(getMockResponse(agentType, chapter, variables, critique, draft));
+    return NextResponse.json(getMockResponse(agentType, chapter, variables, critique, draft, obsidianLogs, undefined, latestMessage));
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// Generates high-fidelity academic mocked content to guarantee out-of-the-box retro aesthetic and flawless offline demo
+// Generates high-fidelity academic mocked content in lovely Thai RPG style
 function getMockResponse(
   agentType: string,
   chapter: string,
   variables: any,
   critique: string,
   draft: string,
-  errorReason?: string
+  obsidianLogs?: string,
+  errorReason?: string,
+  latestMessage: string = ""
 ) {
-  const title = variables.title || "Hybrid Inventory Forecasting Framework";
-  const methodology = variables.methodology || "LSTM neural network merged with traditional ARIMA models";
-  const pipeline = variables.pipeline || "Data ingestion -> Kalman Filtering smoothing -> Feature Scaling -> Joint Model Training";
+  const title = variables.title || "โครงสร้างการพยากรณ์สินค้าคงคลังแบบผสมผสาน";
+  const methodology = variables.methodology || "ระบบโครงข่ายประสาทเทียม LSTM ผสมผสานกับแบบจำลอง ARIMA ดั้งเดิม";
+  const pipeline = variables.pipeline || "Data Ingestion -> Kalman Filtering -> Feature Scaling -> Joint Model Training";
 
   let responseText = "";
 
   if (agentType === "scribe") {
     if (critique) {
-      responseText = `# ${chapter}: Research Design and Methodology (Refined)
+      responseText = `# ${chapter}: การออกแบบและระเบียบวิธีวิจัย (ฉบับปรับปรุงใหม่)
 
-## 3.1 Overview of the Refined Hybrid Model
-This section presents the step-by-step structural implementation of the hybrid forecasting design, specifically addressing the reviewer's critiques concerning parameter configuration. The proposed framework fuses the linear robustness of autoregressive integrated moving average (ARIMA) models with the non-linear learning capacity of Long Short-Term Memory (LSTM) recurrent networks.
+## 3.1 ภาพรวมโครงสร้างโมเดลผสมผสาน (Hybrid Model)
+ส่วนนี้จะนำเสนอโครงสร้างขั้นตอนการทำงานของโมเดลพยากรณ์แบบผสมผสาน (Hybrid Forecasting Model) ที่ได้รับการปรับปรุงเพื่อตอบสนองต่อข้อเสนอแนะของผู้ประเมินเกี่ยวกับการกำหนดค่าพารามิเตอร์ โครงสร้างที่นำเสนอนี้เป็นการบูรณาการจุดเด่นเชิงเส้นของโมเดล ARIMA เข้ากับขีดความสามารถการเรียนรู้ที่ไม่เป็นเชิงเส้นของโครงข่ายประสาทเทียม Long Short-Term Memory (LSTM)
 
-Unlike traditional heuristic implementations, the proposed hybrid pipeline operates sequentially to process multivariate data. The raw dataset first undergoes noise filtration via a multi-dimensional Kalman Filter. 
+ทางท่อส่งข้อมูล (Pipeline) ของเราเริ่มต้นจากการรับชุดข้อมูลดิบเข้ามาปรับความเรียบและกรองสัญญาณรบกวนแบบเกาส์เซียน (Gaussian noise) ด้วยตัวกรองคาลมาน (Kalman Filter) ในมิติต่างๆ ก่อนนำเข้าสู่ขั้นตอนถัดไป:
 
 $$\\hat{x}_{k|k} = \\hat{x}_{k|k-1} + K_k(z_k - H_k\\hat{x}_{k|k-1})$$
 
-Where $K_k$ represents the Kalman gain matrix, which ensures optimal state estimation prior to neural network ingestion.
+โดยที่ $K_k$ คือเมทริกซ์อัตราขยายของคาลมาน (Kalman gain matrix) ซึ่งรับประกันการประมาณสถานะที่เหมาะสมที่สุดก่อนที่โครงข่ายประสาทเทียมจะเริ่มทำการเรียนรู้
 
-## 3.2 LSTM Hyperparameter Configuration (Addressed Critique)
-To eliminate the logical ambiguity noted in the prior review, the LSTM cell structure consists of:
-- **Input Dimension:** 4 lag-variables (ingested at 24-hour time steps).
-- **Hidden Layers:** 2 layers containing 64 hidden units each.
-- **Activation Function:** Hyperbolic tangent (tanh) with a hard-sigmoid gate activation.
-- **Optimizer:** Adam (Adaptive Moment Estimation) configured with a learning rate of $\\eta = 0.001$, $\\beta_1 = 0.9$, and $\\beta_2 = 0.999$.
-- **Dropout Rate:** 0.2 applied between dense projections to mitigate overfitting.
+## 3.2 รายละเอียดการตั้งค่าไฮเปอร์พารามิเตอร์ LSTM (แก้ไขตามคำวิจารณ์)
+เพื่อขจัดความกำกวมของโมเดลตามที่ผู้ประเมินได้ชี้แนะ ทางเราขอชี้แจงโครงสร้างเซลล์ของ LSTM ดังนี้:
+- **มิติการนำเข้า (Input Dimension):** ค่าตัวแปรตามหลัง (Lag-variables) จำนวน 4 ลำดับ อ้างอิงตามช่วงเวลา 24 ชั่วโมง
+- **ชั้นซ่อน (Hidden Layers):** ประกอบด้วยชั้นซ่อนจำนวน 2 ชั้น แต่ละชั้นมีหน่วยย่อย (Hidden units) 64 หน่วย
+- **ฟังก์ชันกระตุ้น (Activation Function):** ใช้ฟังก์ชัน Hyperbolic Tangent (tanh) ร่วมกับเกตกระตุ้นแบบ Hard-sigmoid
+- **ตัวปรับปรุงค่า (Optimizer):** ใช้ Adam Optimizer กำหนดอัตราการเรียนรู้ที่ $\\eta = 0.001$, $\\beta_1 = 0.9$, และ $\\beta_2 = 0.999$
+- **อัตราการสุ่มดรอป (Dropout Rate):** 0.2 ถูกกำหนดระหว่างชั้นเพื่อป้องกันปัญหาการเรียนรู้เกิน (Overfitting)
 
-By integrating the stationary linear components estimated by the ARIMA model directly into the LSTM training cell state, the model avoids overfitting on limited training samples, which is common in standalone neural implementations for Scopus Q3/Q4 index studies.`;
+การนำส่วนประกอบเชิงเส้นที่ประมาณค่าได้จากโมเดล ARIMA เข้าไปเป็นสถานะเซลล์เริ่มต้นของ LSTM ช่วยป้องกันไม่ให้โมเดลเกิดปัญหา Overfitting บนชุดข้อมูลจำกัด ซึ่งถือเป็นจุดแข็งสำคัญที่เหมาะสำหรับการยื่นขออนุมัติตีพิมพ์ในระดับ Scopus Q3/Q4 เหมียว!`;
     } else {
-      responseText = `# \${chapter}: Research Design and Methodology
+      responseText = `# ${chapter}: โครงสร้างและระเบียบวิธีวิจัยเชิงเสนอแนะ
 
-## 3.1 Overview of the Proposed Hybrid Architecture
-The primary methodological objective of this work is to formulate a robust forecasting pipeline utilizing a hybrid approach. The structural flow combines:
-1. **Linear Time-Series Modeling:** ARIMA ($p, d, q$) for extracting stationary linear trends.
-2. **Non-linear Recurrent Modeling:** LSTM cells for capture long-term sequential dependencies.
+## 3.1 โครงสร้างของสถาปัตยกรรมแบบไฮบริด
+วัตถุประสงค์หลักของระเบียบวิธีวิจัยนี้คือการสร้างกระบวนพยากรณ์ที่มีความทนทานต่อสัญญาณรบกวนโดยใช้วิธีการผสมผสาน (Hybrid Approach) ซึ่งประกอบด้วยสองส่วนหลัก:
+1. **การจำลองเชิงเส้นแบบอนุกรมเวลา:** ใช้โมเดล ARIMA ($p, d, q$) ในการสกัดแนวโน้มเชิงเส้นที่เสถียร
+2. **การจำลองแบบไม่เป็นเชิงเส้น:** ใช้เซลล์โครงข่าย LSTM เพื่อจับความสัมพันธ์ตามลำดับเวลาในระยะยาว
 
-The core pipeline is organized sequentially:
-- **Data Ingestion:** Gathers stock inventories from local warehousing repositories.
-- **Kalman Filtering:** Filters Gaussian sensor noise to provide clean baseline points.
-- **LSTM Encoding:** Trains on the filtered residual variance.
+ท่อส่งข้อมูลหลักจัดเรียงอย่างเป็นระบบดังนี้:
+- **การนำเข้าข้อมูล (Data Ingestion):** ดึงข้อมูลระดับคลังสินค้าจากฐานข้อมูลส่วนกลาง
+- **การกรองข้อมูล (Kalman Filtering):** กำจัดสัญญาณรบกวนแบบเกาส์เซียนเพื่อให้ได้ค่าฐานข้อมูลที่แม่นยำ
+- **การเรียนรู้เชิงลึก (LSTM Encoding):** ฝึกสอนระบบบนค่าความแปรปรวนคงเหลือจากการพยากรณ์เชิงเส้น
 
 \`\`\`
 +------------------+     +------------------+     +------------------+
-|   Raw Data       | --> |  Kalman Filter   | --> |   ARIMA Linear   |
-|   (Stock Level)  |     |  Noise Reduction |     |   Forecasting    |
+|   ข้อมูลดิบ       | --> |   ตัวกรองคาลมาน  | --> |   ทำนายเชิงเส้น  |
+|  (ระดับคลังสินค้า) |     |  (ลดสัญญาณรบกวน) |     |   ด้วย ARIMA     |
 +------------------+     +------------------+     +------------------+
-                                                           |
-                                                           v
+                                                               |
+                                                               v
 +------------------+     +------------------+     +------------------+
-|   Final Forecast | <-- |  LSTM Residual   | <-- |   Residual       |
-|   Aggregation    |     |  Deep Learning   |     |   Calculation    |
+|  ทำนายผลลัพธ์รวม | <-- |   ทำนายค่าคงเหลือ| <-- | คำนวณค่าความ     |
+| (Hybrid Forecast)|     |   ด้วยโมเดล LSTM |     | แปรปรวนคงเหลือ   |
 +------------------+     +------------------+     +------------------+
 \`\`\`
 
-## 3.2 Mathematical Formulation
-The mathematical aggregation combines the linear projection $L_t$ and the non-linear projection $N_t$:
+## 3.2 สมการทางคณิตศาสตร์
+การรวบรวมและผสมผสานผลลัพธ์เชิงเส้น $L_t$ และผลลัพธ์ที่ไม่เป็นเชิงเส้น $N_t$ แสดงได้ดังสมการ:
 
 $$Y_t = L_t + N_t + e_t$$
 
-Where:
-- $Y_t$ is the actual stock value at time step $t$.
-- $L_t$ is the forecasted linear trend value generated by the ARIMA process.
-- $N_t$ is the neural predicted residual error of the time-step.
-- $e_t$ is the stochastic white noise value of the combined framework.`;
+โดยที่:
+- $Y_t$ คือค่าจริงของสินค้าคงคลัง ณ เวลา $t$
+- $L_t$ คือค่าทำนายแนวโน้มเชิงเส้นจากโมเดล ARIMA
+- $N_t$ คือค่าทำนายความแปรปรวนคงเหลือจากโมเดล LSTM
+- $e_t$ คือสัญญาณรบกวนสุ่มสีขาว (Stochastic white noise) ของโมเดลผสมผสาน`;
     }
-  } 
-  
+  }
+
   else if (agentType === "reviewer") {
-    // Reviewer has a random chance or depends on input variables to trigger a pass/fail
     const hasEquations = draft.includes("$$") || draft.includes("Kalman") || draft.includes("\\eta");
     if (!hasEquations) {
       responseText = `[FAIL]
-* **Methodological Ambiguity:** The mathematical representation of the hybrid model is missing. You mention combining ARIMA and LSTM but fail to write the core formula $Y_t = L_t + N_t + e_t$ or define the parameters.
-* **Hyperparameter Specifications Missing:** The text fails to document the LSTM model structure. You must specify the learning rate, dropout rate, and optimizer. Scopus Q3 peer reviews require complete step-by-step transparency.
-* **Overclaiming of Results:** You state that this model is "an absolute paradigm shift for modern supply chain management." This is highly speculative and unsupported by your baseline results. Tone down this statement immediately.`;
+* **ความกำกวมของระเบียบวิธีวิจัย:** ขาดการแสดงสมการทางคณิตศาสตร์ที่ชัดเจนของโมเดลผสมผสาน คุณกล่าวถึงการนำ ARIMA มารวมกับ LSTM แต่ไม่ยอมเขียนสูตรหลัก $Y_t = L_t + N_t + e_t$ หรือให้คำนิยามแก่ตัวแปรเลย
+* **ขาดรายละเอียดของไฮเปอร์พารามิเตอร์:** ในร่างบทความไม่มีการบันทึกโครงสร้างหรือตั้งค่าของแบบจำลอง LSTM คุณต้องระบุอัตราการเรียนรู้ (Learning Rate), ค่า Dropout และตัว Optimizer ให้ชัดเจน การตีพิมพ์ระดับ Scopus ต้องการความโปร่งใสในจุดนี้
+* **การกล่าวอ้างเกินจริง (Overclaiming):** ข้อความที่ระบุว่าโมเดลนี้เป็น "การเปลี่ยนแปลงขั้วการทำงานด้านซัพพลายเชนยุคใหม่อย่างสิ้นเชิง" เป็นคำพูดกล่าวอ้างลอยๆ ที่ขาดผลลัพธ์สนับสนุนที่หนักแน่นเพียงพอ โปรดลดโทนคำพูดส่วนนี้ลงทันที`;
     } else {
       responseText = `[PASS]
-* **Sound Methodology:** The formulas and hybrid aggregation are now formally documented ($Y_t = L_t + N_t + e_t$). The Kalman filter gains are clearly mapped.
-* **Hyperparameters Documented:** The Scribe has clarified the exact layer count (2 layers, 64 units) and optimization coefficients. This is sufficient for Q3/Q4 publication.
-* **Toned Down Claims:** The terminology is suitably academic and avoids speculative overclaiming. Proceed to citation validation.`;
+* **ระเบียบวิธีวิจัยสมบูรณ์:** สมการคณิตศาสตร์และการรวมผลลัพธ์ได้รับการอธิบายอย่างละเอียดแล้ว ($Y_t = L_t + N_t + e_t$) พร้อมมีการระบุบทบาทของตัวกรองคาลมานอย่างชัดเจน
+* **ระบุไฮเปอร์พารามิเตอร์ครบถ้วน:** แมวนักเขียนเขียนแจกแจงโครงสร้างเซลล์ (2 ชั้น, 64 หน่วยย่อย) และตัวปรับปรุงค่าน้ำหนักได้ดีมาก เหมาะสมสำหรับการยื่นขอรับการพิจารณาตีพิมพ์ในระดับ Scopus Q3/Q4 แล้ว
+* **การอ้างอิงสุภาพและน่าเชื่อถือ:** เนื้อหามีการใช้ภาษาทางวิชาการที่เป็นกลางและเป็นข้อเท็จจริง สามารถเข้าสู่กระบวนการจัดฟอร์แมตบรรณานุกรมถัดไปได้`;
     }
-  } 
-  
+  }
+
   else if (agentType === "librarian") {
-    responseText = `* **Citation Format Check:** Checked 4 in-text citations.
-* **Correction Required:** The reference to (Kalman, 1960) on line 12 should be formatted in APA style. Please ensure it maps to a full entry in the references.
-* **Mismatched Elements:** You cited 'ARIMA & Neural Systems' (Box & Jenkins, 1976) but it is not listed in the bibliography section.
-* **Score:** 85% compliance. Standard IEEE brackets [1] or APA (Author, Year) format should be enforced uniformly.`;
-  } 
-  
+    responseText = `* **ตรวจสอบความถูกต้องของการอ้างอิง:** ตรวจเช็คการอ้างอิงในเนื้อหาแล้ว 4 จุด
+* **จุดที่ต้องแก้ไข:** การอ้างอิงถึง (Kalman, 1960) ในบรรทัดที่ 12 ควรระบุฟอร์แมตตามมาตรฐาน APA และตรวจสอบว่ามีรายการเต็มอยู่ในบรรณานุกรมแล้วหรือไม่
+* **จุดไม่ตรงกัน:** มีการอ้างอิงถึง 'ARIMA & Neural Systems' (Box & Jenkins, 1976) ในเนื้อหา แต่ไม่พบในหมวดหมู่บรรณานุกรมส่วนท้ายสุด
+* **คะแนนความถูกต้อง:** 85% แนะนำให้ใช้รูปแบบวงเล็บแบบ IEEE [1] หรือรูปแบบ APA (ผู้แต่ง, ปี) ให้เป็นหนึ่งเดียวสอดคล้องกันตลอดทั้งบทความเหมียว!`;
+  }
+
+  else if (agentType === "coordinator") {
+    const text = latestMessage.toLowerCase();
+    if (text.includes("ร่าง") || text.includes("เขียน") || text.includes("scribe") || text.includes("พิมพ์")) {
+      responseText = `รับทราบค่ะเหมียว! เลขาสาววิเชียรมาศรับคำสั่งแล้ว! เหมียวจะไปเรียก **'แมวนักเขียนหลวง (Scribe Cat)'** เข้ามาลุยร่างเนื้อหาพารามิเตอร์วิจัยในทันทีเลยนะคะ! โดยเหมียวดึงฐานความรู้จาก Obsidian ไปร่วมอ้างอิงด้วยค่ะเหมียว!
+
+[DELEGATE: SCRIBE]`;
+    } else if (text.includes("ตรวจ") || text.includes("พี่ส้ม") || text.includes("reviewer") || text.includes("สับ")) {
+      responseText = `ค่ะเหมียว! เลขาจะรีบส่งร่างบทความไปให้ **'พี่ส้มสายวีน (Grumpy Reviewer)'** ตรวจสับเชิงทฤษฎี ค้นหารอยรั่วที่อาจโดนดร็อปตีพิมพ์ Scopus ค่ะเหมียว! เตรียมตัวพบความจริงใจสุดเข้มงวดได้เลยนะคะเหมียว!
+
+[DELEGATE: REVIEW]`;
+    } else if (text.includes("อ้างอิง") || text.includes("บรรณารักษ์") || text.includes("librarian") || text.includes("format")) {
+      responseText = `รับคำสั่งเหมียว! เลขาจะกระตุ้นให้ **'บรรณารักษ์เหมียว (Librarian Cat)'** เข้ามาตรวจสอบการจัดอ้างอิงและบรรณานุกรมตามมาตรฐาน APA/IEEE เพื่อจัดเก็บเข้าชั้นวิจัยเหมียว!
+
+[DELEGATE: LIBRARIAN]`;
+    } else if (text.includes("วิเคราะห์") || text.includes("แผนงาน") || text.includes("ค้าง") || text.includes("ภารกิจ") || text.includes("งาน")) {
+      responseText = `เหมียววิเคราะห์ระบบเรียบร้อยค่ะทาส! เลขาได้รวบรวมภารกิจวิจัยค้างคา แผนที่จะทำต่อ และโครงการในอนาคตออกมาไว้ใน **'ป็อปอัพภารกิจวิจัยเหมียว'** เรียบร้อยแล้วค่ะ! รบกวนคุณทาสคลิกตรวจสอบหัวข้อการทำงานแล้วกด Approve ให้เลขาไปประสานงานต่อได้เลยนะคะเหมียว! 📋
+
+[ACTION: ANALYZE_TASKS]`;
+    } else {
+      responseText = `สวัสดีค่ะทาสรัก! เลขาสาววิเชียรมาศพร้อมยินดีช่วยเหลือประสานงานวิจัยแล้วค่ะ 🐾 
+
+วันนี้มีคำสั่งพิเศษอะไรให้เหมียวช่วยประสานงานไหมคะ? ทาสสามารถสั่งพิมพ์คุยแชทไลน์กับเหมียวได้โดยตรงเลยเหมียว! เช่น:
+- *"เขียนบทความเรื่อง ARIMA หน่อย"*
+- *"ส่งร่างไปให้พี่ส้มตรวจสิ"*
+- *"ตรวจอ้างอิงบรรณานุกรมให้ที"*
+- *"วิเคราะห์งานที่ค้างให้หน่อย"*
+
+เลขาเหมียวกวาดหางสั่นกระดิ่งรอรับใช้คุณทาสแล้วค่ะเหมียว! 😻`;
+    }
+  }
+
+  else if (agentType === "knowledge-graph") {
+    const graphData = {
+      files: [
+        {
+          filename: "Research_Knowledge_Index.md",
+          content: `# ดัชนีแผนผังความรู้งานวิจัยพยากรณ์สินค้าคงคลัง 🐾\n\nยินดีต้อนรับสู่เครือข่ายความรู้ระบบพยากรณ์ผสมผสาน (Hybrid Inventory Forecasting) ที่เลขาเหมียวช่วยสกัดวิเคราะห์ขึ้นมาจากร่างเอกสารของทาสรักค่ะ!\\n\\nเมื่อทาสเปิดดูในโปรแกรม Obsidian แผนผังคอนเซปต์เหล่านี้จะเชื่อมโยงกันเป็นโครงข่ายวิจัยวิชาการที่งดงามเหมียว!\\n\\n## 📌 คอนเซปต์หลักในสารบบความรู้วิจัย:\\n- [[Hybrid_Forecasting_Architecture]] - สถาปัตยกรรมจำลองหลักแบบผสมผสาน\\n- [[Kalman_Noise_Filter]] - การกรองสิ่งรบกวนสัญญาณในข้อมูลดิบ\\n- [[ARIMA_Time_Series]] - แบบจำลองเชิงเส้นสำหรับอนุกรมเวลาคลาสสิก\\n- [[LSTM_Recurrent_Neural_Network]] - โครงข่ายเซลล์ประสาทเรียนรู้ระยะยาวประเมิน residual\\n\\n## 🔗 เส้นสายความเชื่อมโยงเชิงสถิติ:\\n- ข้อมูลดิบถูกปรับปรุงให้สะอาดด้วย [[Kalman_Noise_Filter]]\\n- ข้อมูลความสะอาดถูกป้อนเข้า [[ARIMA_Time_Series]] เพื่อทำนายผลลัพธ์เชิงเส้น\\n- ค่าเศษเหลือคงเหลือ (Residual) ถูกสกัดไปป้อนสอนความจำเข้าสู่ [[LSTM_Recurrent_Neural_Network]]\\n- ผลการพยากรณ์ทั้งสองส่วนรวมกันจนเกิดสถาปัตยกรรม [[Hybrid_Forecasting_Architecture]]`
+        },
+        {
+          filename: "Hybrid_Forecasting_Architecture.md",
+          content: `# Hybrid Forecasting Architecture (สถาปัตยกรรมผสมผสานหลัก)\\n\\nกรอบการวิจัยที่ผสมผสานจุดแข็งระหว่างโมเดลคลาสสิกและโมเดลการเรียนรู้เชิงลึกเหมียว!\\n\\n## 🔍 โครงสร้างความร่วมมือ:\\n- การรวมกลุ่มสมการหลัก: $Y_t = L_t + N_t + e_t$\\n- นำเอาสัญญาณข้อมูลที่ล้างสัญญาณด้วย [[Kalman_Noise_Filter]] เข้าประมวลผล\\n- รวมผลลัพธ์ส่วนที่เป็นเส้นตรงของ [[ARIMA_Time_Series]] และส่วนที่ผันผวนสูงจาก [[LSTM_Recurrent_Neural_Network]]`
+        },
+        {
+          filename: "Kalman_Noise_Filter.md",
+          content: `# Kalman Noise Filter (การกรองสิ่งรบกวนสัญญาณ)\\n\\nตัวกรองสัญญาณรบกวนสุ่มสีขาว (White Noise) ในงานวิจัยสินค้าคงคลังเหมียว!\\n\\n## ⚙️ หน้าที่เชิงสถิติ:\\n- ลดการเหวี่ยงตัวของข้อมูลที่เกิดจากความล่าช้าการบันทึกหรือ Gaussian Noise\\n- นำส่งส่งต่อผลลัพธ์ที่ปรับปรุงความเรียบแล้วเพื่อใช้ในการคำนวณแนวโน้มใน [[ARIMA_Time_Series]]\\n- เป็นฐานความแม่นยำให้กับต้นแบบพยากรณ์รวม [[Hybrid_Forecasting_Architecture]]`
+        },
+        {
+          filename: "ARIMA_Time_Series.md",
+          content: `# ARIMA Time Series (แบบจำลองเชิงเส้นอนุกรมเวลา)\\n\\nแบบจำลอง AutoRegressive Integrated Moving Average สำหรับดึงพารามิเตอร์แนวโน้มเชิงเส้นเหมียว!\\n\\n## 📊 การทำงานสถิติ:\\n- คำนวณแนวโน้มเชิงเส้นหลักจากผลกรองของ [[Kalman_Noise_Filter]]\\n- ส่งมอบค่าเศษเหลือผันผวนสูง (Residual variance) ไปให้ [[LSTM_Recurrent_Neural_Network]] เรียนรู้หาพฤติกรรมที่ไม่เป็นเชิงเส้นต่อ\\n- เป็นฟันเฟืองแนวราบสำคัญของ [[Hybrid_Forecasting_Architecture]]`
+        },
+        {
+          filename: "LSTM_Recurrent_Neural_Network.md",
+          content: `# LSTM Recurrent Neural Network (โครงข่ายเซลล์ประสาทเรียนรู้ระยะยาว)\\n\\nLong Short-Term Memory เซลล์ประมวลผลเชิงลึกสำหรับจำรูปแบบความผันผวนเหมียว!\\n\\n## 🧠 บทบาทปัญญาประดิษฐ์:\\n- เรียนรู้รูปแบบที่ไม่เป็นเชิงเส้น (Non-linear behaviors) จากค่าความแปรปรวนคงเหลือของ [[ARIMA_Time_Series]]\\n- ป้องกันปัญหาความแปรปรวนคงค้าง (Residual drift) ของกระบวนการหลัก\\n- ประกอบร่างเป็นพยากรณ์ส่วนท้ายของ [[Hybrid_Forecasting_Architecture]]`
+        }
+      ]
+    };
+    responseText = JSON.stringify(graphData);
+  }
+
   else {
-    responseText = `Purr-fectly analyzed! 🐾 I am Project Meow-nager. The Scribe Cat has successfully compiled the drafting workspace. Grumpy Reviewer is waiting with its claws out. Let's send the current draft over for formal Scopus checks!`;
+    responseText = `ผู้จัดการเหมียววิเคราะห์ระบบเรียบร้อย! 🐾 แมวนักเขียนหลวงได้เตรียม Workbench สำหรับหัวข้อ "${title}" ไว้อย่างเสร็จสรรพแล้ว แต่พี่ส้ม (Grumpy Reviewer) กำลังนอนสัปหงกและพร้อมขย้ำตรวจร่างใหม่ของทาสอยู่ค่ะ! ทาสอยากเริ่มต้นรันระบบหรือจะวางแผนร่วมกับเลขาเหมียวก่อนดีคะเหมียว?`;
   }
 
   return {
     text: responseText,
     mode: "mock",
-    notice: errorReason ? `Falling back to 8-bit local mock (Gemini Error: ${errorReason})` : "Running in 8-bit offline local mode."
+    notice: errorReason ? `เปลี่ยนเข้าสู่การจำลองแบบโลคัล 8-bit (เกิดข้อผิดพลาดของ Gemini: ${errorReason})` : "ทำงานในโหมดจำลองแบบโลคัล 8-bit ภาษาไทยสมบูรณ์"
   };
 }

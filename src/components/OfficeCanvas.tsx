@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 interface OfficeCanvasProps {
   currentStage: string; // 'select' | 'drafting' | 'reviewing' | 'librarian' | 'saved'
   dialogueText: string; // The dialogue spoken by the active cat
-  activeAgent: "manager" | "scribe" | "reviewer" | "librarian" | "none";
+  activeAgent: "manager" | "scribe" | "reviewer" | "librarian" | "none" | "coordinator";
 }
 
 export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }: OfficeCanvasProps) {
@@ -26,7 +26,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         clearInterval(intervalId);
         setIsTyping(false);
       }
-    }, 25); // Speedy 8-bit typewriter speed
+    }, 20); // Speedy 8-bit typewriter speed
 
     return () => clearInterval(intervalId);
   }, [dialogueText]);
@@ -42,6 +42,8 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         return "retro-border-accent text-retro-accent border-red-500";
       case "librarian":
         return "retro-border-single text-sky-200 border-emerald-500";
+      case "coordinator":
+        return "retro-border-double text-slate-100 border-pink-400";
       default:
         return "retro-border-double text-slate-100";
     }
@@ -50,15 +52,28 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
   const getAgentLabel = () => {
     switch (activeAgent) {
       case "manager":
-        return "Project Meow-nager (Agent 1)";
+        return "ผู้จัดการเหมียว :: Meow-nager (Agent 1)";
       case "scribe":
-        return "Scribe Cat (Agent 2)";
+        return "แมวนักเขียนหลวง :: Scribe Cat (Agent 2)";
       case "reviewer":
-        return "Grumpy Reviewer (Agent 3)";
+        return "พี่ส้มสายวีน :: Grumpy Reviewer (Agent 3)";
       case "librarian":
-        return "Librarian Cat (Agent 4)";
+        return "บรรณารักษ์เหมียว :: Librarian Cat (Agent 4)";
+      case "coordinator":
+        return "เลขาสาววิเชียรมาศ :: Coordinator (เลขาเหมียว)";
       default:
-        return "Meow-nuscript Office";
+        return "ระบบสื่อสารโรงหล่อต้นฉบับแมวเหมียว 🐾";
+    }
+  };
+
+  const getAgentStageText = () => {
+    switch (currentStage) {
+      case "select": return "เลือกบทที่พึ่งเริ่มเขียน";
+      case "drafting": return "แมวกำลังระดมเขียนร่างบทความ";
+      case "reviewing": return "พี่ส้มกำลังสับตรวจความข้นเชิงทฤษฎี";
+      case "librarian": return "ตรวจความครบถ้วนของเอกสารอ้างอิง";
+      case "saved": return "เซฟแช่แข็งเข้าคลังวิจัย Scopus แล้ว";
+      default: return currentStage;
     }
   };
 
@@ -72,6 +87,8 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         return "/grumpy-reviewer.svg";
       case "librarian":
         return "/librarian-cat.svg";
+      case "coordinator":
+        return "/siamese-cat.svg";
       default:
         return "/siamese-cat.svg";
     }
@@ -85,7 +102,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 bg-red-600 rounded-full animate-pulse border-2 border-black" />
           <h2 className="font-press-start text-[10px] uppercase text-retro-primary tracking-wider font-bold">
-            Office Console :: Active
+            หน้าจอเอเจนต์เหมียวทำงาน :: Office Console Active
           </h2>
         </div>
         <div className="flex gap-2">
@@ -112,7 +129,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         >
           {activeAgent === "manager" && (
             <div className="absolute -top-10 bg-yellow-400 text-black border-2 border-black font-press-start text-[8px] px-1 py-0.5 rounded uppercase font-bold animate-bounce">
-              Active!
+              สั่งการอยู่!
             </div>
           )}
           <img 
@@ -121,7 +138,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
             className="w-16 h-16 pixelated animate-bob" 
           />
           <div className="bg-black/80 text-[10px] text-retro-primary border border-retro-primary/40 px-1 font-press-start scale-75 rounded whitespace-nowrap mt-1">
-            MEOW-NAGER
+            ผู้จัดการเหมียว
           </div>
         </div>
 
@@ -133,7 +150,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         >
           {activeAgent === "scribe" && (
             <div className="absolute -top-10 bg-indigo-400 text-black border-2 border-black font-press-start text-[8px] px-1 py-0.5 rounded uppercase font-bold animate-bounce">
-              Writing...
+              กำลังเขียน...
             </div>
           )}
           <img 
@@ -142,7 +159,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
             className={`w-16 h-16 pixelated ${currentStage === "drafting" ? "animate-pulse" : "animate-bob"}`} 
           />
           <div className="bg-black/80 text-[10px] text-sky-300 border border-sky-400/40 px-1 font-press-start scale-75 rounded whitespace-nowrap mt-1">
-            SCRIBE
+            แมวนักเขียนหลวง
           </div>
         </div>
 
@@ -154,7 +171,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         >
           {activeAgent === "reviewer" && (
             <div className="absolute -top-10 bg-red-500 text-white border-2 border-black font-press-start text-[8px] px-1 py-0.5 rounded uppercase font-bold animate-bounce">
-              Reviewing!
+              สับตรวจอยู่!
             </div>
           )}
           <img 
@@ -163,7 +180,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
             className={`w-16 h-16 pixelated ${currentStage === "reviewing" ? "animate-bounce" : "animate-bob"}`} 
           />
           <div className="bg-black/80 text-[10px] text-red-400 border border-red-500/40 px-1 font-press-start scale-75 rounded whitespace-nowrap mt-1">
-            REVIEWER
+            พี่ส้มสายวีน
           </div>
         </div>
 
@@ -175,7 +192,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
         >
           {activeAgent === "librarian" && (
             <div className="absolute -top-10 bg-emerald-500 text-black border-2 border-black font-press-start text-[8px] px-1 py-0.5 rounded uppercase font-bold animate-bounce">
-              Citations!
+              เช็คบรรณารักษ์!
             </div>
           )}
           <img 
@@ -184,7 +201,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
             className="w-16 h-16 pixelated animate-bob" 
           />
           <div className="bg-black/80 text-[10px] text-emerald-400 border border-emerald-400/40 px-1 font-press-start scale-75 rounded whitespace-nowrap mt-1">
-            LIBRARIAN
+            บรรณารักษ์เหมียว
           </div>
         </div>
 
@@ -198,7 +215,7 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
             />
             {currentStage === "saved" && (
               <div className="bg-emerald-400 text-black text-[7px] border border-black px-0.5 rounded scale-75 -mt-3 uppercase font-press-start font-bold">
-                Lock! 🐾
+                แช่แข็งเสร็จ! 🐾
               </div>
             )}
           </div>
@@ -225,8 +242,8 @@ export default function OfficeCanvas({ currentStage, dialogueText, activeAgent }
               <span className="font-press-start text-[10px] uppercase font-bold tracking-wider">
                 {getAgentLabel()}
               </span>
-              <span className="text-[10px] opacity-50 font-mono">
-                [STAGE: {currentStage.toUpperCase()}]
+              <span className="text-[10px] opacity-75 font-mono text-retro-primary">
+                [ภารกิจ: {getAgentStageText()}]
               </span>
             </div>
             
