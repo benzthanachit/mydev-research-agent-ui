@@ -191,7 +191,7 @@ export default function TaskApprovalModal({
   const tasksList = getTasksList();
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 font-vt323 antialiased backdrop-blur-sm select-none">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 font-vt323 antialiased backdrop-blur-sm">
       
       {/* 8-Bit Panel Container */}
       <div className="w-full max-w-4xl retro-border-double bg-retro-panel flex flex-col max-h-[90vh] overflow-hidden shadow-[10px_10px_0px_#000] scanlines">

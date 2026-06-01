@@ -12,6 +12,32 @@ async function ensureDirectoryExists(dirPath: string) {
   }
 }
 
+async function getMarkdownFilesRecursively(dir: string, baseDir: string = dir): Promise<Array<{ name: string; size: number; mtime: Date }>> {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const results: Array<{ name: string; size: number; mtime: Date }> = [];
+  
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      // Exclude hidden folders like .obsidian or .git
+      if (!entry.name.startsWith(".")) {
+        const subFiles = await getMarkdownFilesRecursively(fullPath, baseDir);
+        results.push(...subFiles);
+      }
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, "/");
+      const stats = await fs.stat(fullPath);
+      results.push({
+        name: relativePath,
+        size: stats.size,
+        mtime: stats.mtime
+      });
+    }
+  }
+  
+  return results;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -34,6 +60,9 @@ export async function POST(req: Request) {
       const { overwrite = false } = body;
       const timestamp = new Date().toISOString().replace("T", " ").substring(0, 19);
       let formattedContent = content;
+      
+      // Ensure the parent directory (including subfolders like 'logs' or 'references') exists
+      await ensureDirectoryExists(path.dirname(targetFilePath));
       
       if (overwrite) {
         // Direct clean write/overwrite without automatic appending and headers
@@ -70,6 +99,7 @@ export async function POST(req: Request) {
         await fs.access(targetFilePath);
       } catch {
         // Create an initial file if it doesn't exist
+        await ensureDirectoryExists(path.dirname(targetFilePath));
         const initialContent = `# Meow-nuscript Foundry Working Memory\n\nUse this to store decision logs and micro-facts across chapters.`;
         await fs.writeFile(targetFilePath, initialContent, "utf-8");
       }
@@ -86,26 +116,22 @@ export async function POST(req: Request) {
     
     else {
       // Action: LIST
-      const files = await fs.readdir(targetVaultDir);
-      const mdFiles = files.filter(f => f.endsWith(".md"));
+      let fileDetails = await getMarkdownFilesRecursively(targetVaultDir, targetVaultDir);
       
       // If empty, seed an initial log file
-      if (mdFiles.length === 0) {
+      if (fileDetails.length === 0) {
         const seedPath = path.join(targetVaultDir, "Decision_Logs.md");
         await fs.writeFile(seedPath, `# Meow-nuscript Foundry Decision Logs\n\n- Seeded initial working memory logs.`, "utf-8");
-        mdFiles.push("Decision_Logs.md");
+        const stats = await fs.stat(seedPath);
+        fileDetails.push({
+          name: "Decision_Logs.md",
+          size: stats.size,
+          mtime: stats.mtime
+        });
       }
 
-      const fileDetails = await Promise.all(
-        mdFiles.map(async (name) => {
-          const stats = await fs.stat(path.join(targetVaultDir, name));
-          return {
-            name,
-            size: stats.size,
-            mtime: stats.mtime
-          };
-        })
-      );
+      // Sort by modified time descending (latest updated first)
+      fileDetails.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
       return NextResponse.json({
         success: true,

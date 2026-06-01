@@ -68,7 +68,7 @@ export default function SecretaryChat({
   };
 
   return (
-    <div className="retro-border-single bg-retro-panel p-4 flex flex-col gap-3 min-h-[500px] h-[580px] select-none">
+    <div className="retro-border-single bg-retro-panel p-4 flex flex-col gap-3 min-h-[500px] h-[580px]">
       
       {/* Secretary Header Profile Panel */}
       <div className="bg-[#12131a] px-3 py-2 border-b-2 border-retro-border flex items-center justify-between">
