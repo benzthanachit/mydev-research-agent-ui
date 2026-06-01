@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128" style="image-rendering: pixelated;">
+  <!-- Cat 7 - Integrity Protection Cat Pixel Art Sprite -->
+  <!-- Cute Calico Cat (white, orange, grey patches) wearing smart investigator glasses and holding a small shield -->
+  
+  <!-- Back / Tail -->
+  <rect x="2" y="15" width="2" height="7" fill="#4a4e69" />
+  <rect x="4" y="14" width="2" height="2" fill="#9a8c98" />
+
+  <!-- Body (White base with patches) -->
+  <rect x="6" y="12" width="16" height="13" fill="#ffffff" />
+  
+  <!-- Grey Patches -->
+  <rect x="7" y="12" width="4" height="4" fill="#4a4e69" />
+  <rect x="15" y="16" width="3" height="4" fill="#4a4e69" />
+  <!-- Orange Patches -->
+  <rect x="12" y="12" width="4" height="5" fill="#f28482" />
+  <rect x="8" y="18" width="3" height="4" fill="#f28482" />
+  
+  <!-- Chest -->
+  <rect x="19" y="14" width="3" height="6" fill="#f7ede2" />
+  
+  <!-- Paws (White/Orange socks) -->
+  <rect x="6" y="25" width="2" height="3" fill="#f28482" />
+  <rect x="9" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="15" y="25" width="2" height="3" fill="#4a4e69" />
+  <rect x="18" y="25" width="2" height="3" fill="#ffffff" />
+
+  <!-- Head (White & Orange) -->
+  <rect x="15" y="4" width="11" height="9" fill="#ffffff" />
+  <rect x="15" y="4" width="5" height="5" fill="#f28482" /> <!-- Orange ear side -->
+  <rect x="22" y="4" width="4" height="4" fill="#4a4e69" /> <!-- Grey side -->
+  
+  <!-- Ears -->
+  <rect x="16" y="1" width="2" height="3" fill="#f28482" />
+  <rect x="23" y="1" width="2" height="3" fill="#4a4e69" />
+  <!-- Ear insides (Pink) -->
+  <rect x="17" y="2" width="1" height="2" fill="#ff9eb5" />
+  <rect x="23" y="2" width="1" height="2" fill="#ff9eb5" />
+  
+  <!-- Eyes -->
+  <rect x="18" y="7" width="2" height="2" fill="#2a9d8f" />
+  <rect x="23" y="7" width="2" height="2" fill="#2a9d8f" />
+  <!-- Pupils -->
+  <rect x="19" y="7" width="1" height="2" fill="#000000" />
+  <rect x="24" y="7" width="1" height="2" fill="#000000" />
+  
+  <!-- Investigator Glasses Frame overlay (Black) -->
+  <rect x="17" y="6" width="9" height="1" fill="#000000" />
+  <rect x="17" y="7" width="1" height="2" fill="#000000" />
+  <rect x="20" y="7" width="1" height="2" fill="#000000" />
+  <rect x="22" y="7" width="1" height="2" fill="#000000" />
+  <rect x="25" y="7" width="1" height="2" fill="#000000" />
+  <rect x="17" y="9" width="4" height="1" fill="#000000" />
+  <rect x="22" y="9" width="4" height="1" fill="#000000" />
+  
+  <!-- Snout -->
+  <rect x="20" y="9" width="4" height="2" fill="#ffffff" />
+  <rect x="22" y="9" width="1" height="1" fill="#ff9eb5" /> <!-- Nose -->
+
+  <!-- Small Protection Shield in paws -->
+  <rect x="22" y="15" width="5" height="5" fill="#4a90e2" />
+  <rect x="23" y="16" width="3" height="4" fill="#5c9be6" />
+  <!-- Shield emblem -->
+  <rect x="24" y="17" width="1" height="2" fill="#ffffff" />
+  <polygon points="22,15 27,15 24.5,21" fill="#357ebd" opacity="0.4" />
+</svg>

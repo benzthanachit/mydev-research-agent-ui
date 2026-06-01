@@ -6,6 +6,7 @@ import ChapterWorkbench from "../components/ChapterWorkbench";
 import MemoryExplorer from "../components/MemoryExplorer";
 import SecretaryChat from "../components/SecretaryChat";
 import TaskApprovalModal from "../components/TaskApprovalModal";
+import ObsidianBrainChat from "../components/ObsidianBrainChat";
 import { Terminal, Sparkles } from "lucide-react";
 
 interface ChatMessage {
@@ -24,7 +25,7 @@ export default function Home() {
   
   // Chapter State Machine States
   const [currentChapter, setCurrentChapter] = useState("Chapter 3: Research Methodology");
-  const [stage, setStage] = useState<"select" | "initializing" | "drafting" | "reviewing" | "editing" | "librarian" | "saved">("select");
+  const [stage, setStage] = useState<"select" | "initializing" | "drafting" | "reviewing" | "editing" | "math-checking" | "citation-matching" | "integrity-protecting" | "diagram-generating" | "librarian" | "saved">("select");
   
   const [variables, setVariables] = useState({
     title: "",
@@ -43,7 +44,7 @@ export default function Home() {
 
   // UI Display States
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeAgent, setActiveAgent] = useState<"none" | "manager" | "scribe" | "reviewer" | "editor" | "librarian" | "coordinator">("manager");
+  const [activeAgent, setActiveAgent] = useState<"none" | "manager" | "scribe" | "reviewer" | "editor" | "librarian" | "coordinator" | "math-checker" | "citation-matcher" | "integrity-guard" | "diagram-architect">("manager");
   const [dialogueText, setDialogueText] = useState("ยินดีต้อนรับสู่โรงหล่อต้นฉบับแมวเหมียว 🐾 ทาสรักวิชาการสามารถเลือกบทที่ต้องการพัฒนา ป้อนร่างข้อมูลตั้งต้นที่แท็บ [2] หรือพิมพ์แชทประสานงานกับเลขาเหมียวทางด้านขวาเพื่อเริ่มงานได้เลยนะคะ!");
   
   // Secretary LINE Chat states
@@ -309,11 +310,171 @@ export default function Home() {
         })
       });
 
-      // --- PHASE 4: LIBRARIAN CAT (Cat 4 - บรรณารักษ์แมวแยกคลัง) ---
+      // --- PHASE 4: MATH VERIFICATION CAT (Cat 5 - แมวตรวจสมการ) ---
+      const hasMath = polishedDraft.includes("$$") || polishedDraft.includes("$");
+      if (hasMath) {
+        setActiveAgent("math-checker");
+        setStage("math-checking");
+        setDialogueText("เหมียวสมการ (Math Verification Cat - แมว 5) กำลังเข้าเวรสแกนสูตร LaTeX ตรวจสอบความสมมาตรเชิงสถิติและจับคู่นิยามพารามิเตอร์...");
+        addLog("แมว 5 (Math Checker)", "สแกนพบสูตรคณิตศาสตร์ในบทความ กำลังวิเคราะห์และตรวจสอบความสมมาตรทางสถิติของตัวแปร...", "info");
+
+        const mathRes = await fetch("/api/agents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chapter: currentChapter,
+            agentType: "math-checker",
+            draft: polishedDraft,
+            variables,
+            apiKey
+          })
+        });
+
+        const mathData = await mathRes.json();
+        if (mathData.error) {
+          throw new Error(`Math Checker Cat ตรวจสอบขัดข้อง: ${mathData.error}`);
+        }
+
+        // Save Math Report inside Obsidian concepts
+        await fetch("/api/obsidian", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "write",
+            filename: `concepts/Mathematical_Proof_${safeChapterName}.md`,
+            content: mathData.text,
+            overwrite: true,
+            vaultPath: obsidianPath
+          })
+        });
+        addLog("แมว 5 (Math Checker)", "วิเคราะห์และกำหนดนิยามพารามิเตอร์คณิตศาสตร์ลง Obsidian concepts สำเร็จ!", "success");
+      } else {
+        addLog("แมว 5 (Math Checker)", "สแกนไม่พบสมการหรือเครื่องหมายสัญลักษณ์ LaTeX ในเนื้อร่าง ข้ามการตรวจสอบสมการเหมียว", "warning");
+      }
+
+      // --- PHASE 5: CITATION FORMATTING CAT (Cat 6 - แมวตรวจอ้างอิง) ---
+      const hasCitations = polishedDraft.includes("[") || /Smith|al\./i.test(polishedDraft);
+      if (hasCitations) {
+        setActiveAgent("citation-matcher");
+        setStage("citation-matching");
+        setDialogueText("เหมียวอ้างอิงบรรณานุกรม (Citation Matcher Cat - แมว 6) กำลังจัดระเบียบ In-text citations และแมทช์เข้าคลัง Reference Library...");
+        addLog("แมว 6 (Citation Matcher)", "ตรวจพบการอ้างอิงในบทความ กำลังดึง In-text citations และเทียบเคียงบรรณานุกรมตามมาตรฐานสากล...", "info");
+
+        const citationRes = await fetch("/api/agents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chapter: currentChapter,
+            agentType: "citation-matcher",
+            draft: polishedDraft,
+            obsidianLogs,
+            apiKey
+          })
+        });
+
+        const citationData = await citationRes.json();
+        if (citationData.error) {
+          throw new Error(`Citation Matcher Cat ตรวจบรรณานุกรมขัดข้อง: ${citationData.error}`);
+        }
+
+        // Save Citation Report inside Obsidian concepts
+        await fetch("/api/obsidian", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "write",
+            filename: `concepts/Citation_Bibliography_${safeChapterName}.md`,
+            content: citationData.text,
+            overwrite: true,
+            vaultPath: obsidianPath
+          })
+        });
+        addLog("แมว 6 (Citation Matcher)", "รวบรวมดัชนีบรรณานุกรมและจัดรูปแบบ IEEE/APA สำเร็จเหมียว!", "success");
+      } else {
+        addLog("แมว 6 (Citation Matcher)", "สแกนไม่พบการอ้างอิงวงเล็บเหลี่ยมหรือ Smith et al. ข้ามการจัดบรรณานุกรมเชิงลึกเหมียว", "warning");
+      }
+
+      // --- PHASE 6: INTEGRITY PROTECTION CAT (Cat 7 - แมวจริยธรรม) ---
+      setActiveAgent("integrity-guard");
+      setStage("integrity-protecting");
+      setDialogueText("เหมียวตรวจเคลมรักษาจริยธรรม (Integrity Shield Cat - แมว 7) วิเคราะห์สำนวนอ้างเกินจริง และระบุแนวทาง Academic Hedging...");
+      addLog("แมว 7 (Integrity Shield)", "กำลังวิเคราะห์ระดับความเด็ดขาดของประโยคเพื่อป้องกัน Plagiarism และ Over-claiming ในระดับสากล...", "info");
+
+      const integrityRes = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chapter: currentChapter,
+          agentType: "integrity-guard",
+          draft: polishedDraft,
+          obsidianLogs,
+          apiKey
+        })
+      });
+
+      const integrityData = await integrityRes.json();
+      if (integrityData.error) {
+        throw new Error(`Integrity Shield Cat ตรวจจริยธรรมขัดข้อง: ${integrityData.error}`);
+      }
+
+      // Save Integrity Report inside Obsidian logs
+      await fetch("/api/obsidian", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "write",
+          filename: `logs/Integrity_Report_${safeChapterName}.md`,
+          content: integrityData.text,
+          overwrite: true,
+          vaultPath: obsidianPath
+        })
+      });
+      addLog("แมว 7 (Integrity Shield)", "ประเมินความปลอดภัยสากลและมอบบัตรสำนวนถ่อมตนทางวิชาการ (Hedging) สำเร็จเหมียว!", "success");
+
+      // --- PHASE 7: DIAGRAM ARCHITECT CAT (Cat 8 - แมวออกแบบแผนผัง) ---
+      setActiveAgent("diagram-architect");
+      setStage("diagram-generating");
+      setDialogueText("เหมียวจิตรกรระเบียบวิธี (Diagram Architect - แมว 8) กำลังสกัดข้อมูล Pipeline เพื่อสเก็ตช์แผนภาพ Mermaid Flowchart...");
+      addLog("แมว 8 (Diagram Cat)", "กำลังแปลงระเบียบวิธีวิจัยและท่อส่งข้อมูลเชิงสถิติของคุณให้เป็นแผนผังเชื่อมโยง Mermaid...", "info");
+
+      const diagramRes = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chapter: currentChapter,
+          agentType: "diagram-architect",
+          variables,
+          apiKey
+        })
+      });
+
+      const diagramData = await diagramRes.json();
+      if (diagramData.error) {
+        throw new Error(`Diagram Architect Cat วาดรูปขัดข้อง: ${diagramData.error}`);
+      }
+
+      // Save Diagram inside Obsidian concepts
+      await fetch("/api/obsidian", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "write",
+          filename: `concepts/Methodology_Diagram_${safeChapterName}.md`,
+          content: diagramData.text,
+          overwrite: true,
+          vaultPath: obsidianPath
+        })
+      });
+      addLog("แมว 8 (Diagram Cat)", "ร่างแผนภาพลำดับโมเดลสถิติ Mermaid Flowchart บันทึกลง Obsidian เรียบร้อยเหมียว!", "success");
+
+      // --- PHASE 8: LIBRARIAN CAT (Cat 4 - บรรณารักษ์แมวประกอบบทความ) ---
       setActiveAgent("librarian");
       setStage("librarian");
-      setDialogueText("บรรณารักษ์เหมียว (Librarian Cat - แมว 4) รับหน้าไม้คิวเรตไฟล์สถิติ สกัดคีย์วิกิ และพล็อตผังลง Obsidian Graph ให้เชื่อมโยงสวยงามค่ะ...");
-      addLog("แมว 4 (Librarian)", "กำลังแยกสกัดหัวข้อสถิติ วิธีวิทยา หรือ ARIMA/LSTM/Kalman ออกเป็นไฟล์ย่อยๆ สำหรับต่อกราฟ Obsidian...", "info");
+      setDialogueText("บรรณารักษ์เหมียว (Librarian Cat - แมว 4) รับข้อมูลวิจัยจากแมวตัวตรวจสอบทั้งหมดเพื่อ Curate คลังแยก Concept และรวบรวม Manuscript ฉบับสุดท้ายค่ะ...");
+      addLog("แมว 4 (Librarian)", "กำลังดึงรายงานตรวจสอบ (สมการ, บรรณานุกรม, ผังโฟลว์ชาร์ต) ที่พึ่งถูกเขียนสดๆ ร้อนๆ จากคลัง Obsidian...", "info");
+
+      // Fetch fresh obsidian logs that now contain math, citation, integrity, and diagram reports!
+      const freshObsidianLogs = await getObsidianVaultContext();
 
       const librarianRes = await fetch("/api/agents", {
         method: "POST",
@@ -322,6 +483,7 @@ export default function Home() {
           chapter: currentChapter,
           agentType: "librarian",
           draft: polishedDraft,
+          obsidianLogs: freshObsidianLogs,
           apiKey
         })
       });
@@ -362,6 +524,9 @@ export default function Home() {
         });
       }
 
+      // Select final manuscript compilation content (prefers librarian's synthesized compiled_chapter)
+      const compiledFinalManuscript = parsedLib.compiled_chapter || polishedDraft;
+
       // Write compiled chapter to Obsidian chapters folder
       await fetch("/api/obsidian", {
         method: "POST",
@@ -369,11 +534,35 @@ export default function Home() {
         body: JSON.stringify({
           action: "write",
           filename: `chapters/${safeChapterName}_Final.md`,
-          content: polishedDraft,
+          content: compiledFinalManuscript,
           overwrite: true,
           vaultPath: obsidianPath
         })
       });
+
+      // Write compiled chapter to Obsidian as LaTeX (.tex) if LaTeX formatting is detected
+      const isLatexDoc = 
+        chapterDraftText.includes("\\documentclass") || 
+        chapterDraftText.includes("\\begin{") || 
+        chapterDraftText.includes("\\section") ||
+        compiledFinalManuscript.includes("\\documentclass") || 
+        compiledFinalManuscript.includes("\\begin{") || 
+        compiledFinalManuscript.includes("\\section");
+
+      if (isLatexDoc) {
+        await fetch("/api/obsidian", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "write",
+            filename: `chapters/${safeChapterName}_Final.tex`,
+            content: compiledFinalManuscript,
+            overwrite: true,
+            vaultPath: obsidianPath
+          })
+        });
+        addLog("เลขาเหมียว", `ตรวจพบไวยากรณ์ LaTeX! บันทึกไฟล์บทวิจัยฉบับสมบูรณ์ลง chapters/${safeChapterName}_Final.tex สำเร็จเหมียว! 📄`, "success");
+      }
 
       // Append summary to central decision logs
       await fetch("/api/obsidian", {
@@ -382,22 +571,22 @@ export default function Home() {
         body: JSON.stringify({
           action: "write",
           filename: "Decision_Logs.md",
-          content: `เสร็จสมบูรณ์: ${currentChapter}\n- หัวข้อ: ${variables.title}\n- สรุปย่อ: ${parsedLib.chapter_summary || "ประกอบผลสำเร็จ"}\n- ประเมิน: ผ่านการตรวจโดยพี่ส้มและขัดเกลาสำนวนมนุษย์โดยแมว 3 เหมียว!`,
+          content: `เสร็จสมบูรณ์: ${currentChapter}\n- หัวข้อ: ${variables.title}\n- สรุปย่อ: ${parsedLib.chapter_summary || "ประกอบผลสำเร็จ"}\n- ประเมิน: ผ่านการประเมินความสอดคล้องคณิตศาสตร์ (แมว 5) การจัดบรรณานุกรมสากล (แมว 6) ตรวจจริยธรรมอ้างอิงถ่อมตน (แมว 7) พล็อตผังระเบียบวิธี Mermaid (แมว 8) และประกอบร่างสมบูรณ์โดยแมว 4 เหมียว!`,
           overwrite: false,
           vaultPath: obsidianPath
         })
       });
 
-      addLog("แมว 4 (Librarian)", "จัดแยกหัวข้อย่อย พล็อตลิงก์กราฟ [[Concept]] และสรุปคลังเสร็จสิ้นเรียบร้อยเหมียว! 🐾🕸️", "success");
+      addLog("แมว 4 (Librarian)", "จัดแยกหัวข้อย่อย พล็อตลิงก์กราฟ [[Concept]] และรวบรวมเปเปอร์บทความวิจัยสมบูรณ์เสร็จสิ้นเรียบร้อยเหมียว! 🐾🕸️", "success");
 
       // --- SYSTEM FINALIZE ---
       setStage("saved");
       setActiveAgent("manager");
-      setDialogueText(`เหมียว! ประกอบบทสำเร็จ 100% แล้วค่ะทาส! 🏆 ห่วงโซ่แมวทั้ง 5 ประสานงานเสร็จสิ้นเป็นบทความวิจัยเกรด Scopus Q3/Q4 ที่งดงาม ข้อมูลถูกสลักแยกหัวข้อสร้างผังใน Obsidian เรียบร้อยแล้วค่ะ!`);
-      addLog("ระบบโรงหล่อ", "🟢 สายพานห่วงโซ่การผลิตห้าประสาทแมวรันงานสำเร็จ 100%! เปเปอร์ระดับสากลพร้อมตีพิมพ์แล้วเหมียว 🐾🏆", "success");
+      setDialogueText(`เหมียว! ประกอบบทสำเร็จ 100% แล้วค่ะทาส! 🏆 ห่วงโซ่การผลิตวิจัย 9-Cat Foundry ประสานงานเสร็จสิ้นเป็นบทความวิจัยเกรด Scopus Q3/Q4 ที่งดงาม ข้อมูลถูกสลักแยกหัวข้อและจัดทำใบรับรองทางวิชาการเรียบร้อยแล้วค่ะ!`);
+      addLog("ระบบโรงหล่อ", "🟢 สายพานห่วงโซ่การผลิตเก้าประสาทแมวรันงานสำเร็จ 100%! เปเปอร์ระดับสากลพร้อมยื่นเสนอ Scopus Q3/Q4 แล้วเหมียว 🐾🏆", "success");
 
       // Increase secretary affection level!
-      setAffectionLevel(prev => Math.min(100, prev + 15));
+      setAffectionLevel(prev => Math.min(100, prev + 25));
       setRefreshTrigger(prev => prev + 1);
 
     } catch (err: any) {
@@ -921,6 +1110,12 @@ export default function Home() {
         <p>© 2026 Meow-nuscript Foundry. สร้างสรรค์ด้วยพิกเซลอาร์ตและระบบประสาทห้าแมวเหมียวสุดแม่นยำ</p>
         <p className="mt-1">ขับเคลื่อนด้วยชุดประมวลผลทางประสาท Gemini-SDK & Model Context Protocol Routing Systems</p>
       </footer>
+
+      {/* Obsidian Second Brain floating chat assistant */}
+      <ObsidianBrainChat
+        obsidianPath={obsidianPath}
+        apiKey={apiKey}
+      />
 
       {/* Task Analysis approval popup modal */}
       <TaskApprovalModal

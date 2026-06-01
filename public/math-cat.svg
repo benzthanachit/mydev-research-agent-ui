@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128" style="image-rendering: pixelated;">
+  <!-- Cat 5 - Math Verification Cat Pixel Art Sprite -->
+  <!-- Cute Mint Green Cat holding a gold geometry triangle ruler -->
+  
+  <!-- Back / Tail -->
+  <rect x="2" y="15" width="2" height="7" fill="#2d6a4f" />
+  <rect x="4" y="14" width="2" height="2" fill="#52b788" />
+
+  <!-- Body (Mint Green) -->
+  <rect x="6" y="12" width="16" height="13" fill="#74c69d" />
+  
+  <!-- Stripes (Forest Green) -->
+  <rect x="9" y="12" width="2" height="5" fill="#40916c" />
+  <rect x="13" y="12" width="2" height="5" fill="#40916c" />
+  <rect x="17" y="12" width="2" height="5" fill="#40916c" />
+  
+  <!-- Chest (White bib) -->
+  <rect x="19" y="14" width="3" height="6" fill="#ffffff" />
+  
+  <!-- Paws (White socks) -->
+  <rect x="6" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="9" y="25" width="2" height="3" fill="#74c69d" />
+  <rect x="15" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="18" y="25" width="2" height="3" fill="#74c69d" />
+
+  <!-- Head -->
+  <rect x="15" y="4" width="11" height="9" fill="#74c69d" />
+  
+  <!-- Ears -->
+  <rect x="16" y="1" width="2" height="3" fill="#74c69d" />
+  <rect x="23" y="1" width="2" height="3" fill="#74c69d" />
+  <!-- Ear insides (Pink) -->
+  <rect x="17" y="2" width="1" height="2" fill="#ff9eb5" />
+  <rect x="23" y="2" width="1" height="2" fill="#ff9eb5" />
+  
+  <!-- Eyes (Intelligent Blue) -->
+  <rect x="18" y="7" width="2" height="2" fill="#4ea8de" />
+  <rect x="23" y="7" width="2" height="2" fill="#4ea8de" />
+  <!-- Pupils -->
+  <rect x="19" y="7" width="1" height="2" fill="#000000" />
+  <rect x="24" y="7" width="1" height="2" fill="#000000" />
+  
+  <!-- Snout -->
+  <rect x="20" y="9" width="4" height="2" fill="#ffffff" />
+  <rect x="22" y="9" width="1" height="1" fill="#ff9eb5" /> <!-- Nose -->
+
+  <!-- Gold Geometry Triangle Ruler in paw -->
+  <rect x="22" y="16" width="5" height="5" fill="#ffd700" opacity="0.9" />
+  <rect x="23" y="17" width="3" height="3" fill="#ffffff" />
+  <line x1="22" y1="21" x2="27" y2="21" stroke="#b79400" stroke-width="1" />
+  <line x1="22" y1="16" x2="22" y2="21" stroke="#b79400" stroke-width="1" />
+</svg>

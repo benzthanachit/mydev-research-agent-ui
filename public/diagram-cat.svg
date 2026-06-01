@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128" style="image-rendering: pixelated;">
+  <!-- Cat 8 - Diagram Generation Cat Pixel Art Sprite -->
+  <!-- Cute Grey/Silver Cat holding a paint brush and a flowchart drawing palette -->
+  
+  <!-- Back / Tail -->
+  <rect x="2" y="15" width="2" height="7" fill="#4a5759" />
+  <rect x="4" y="14" width="2" height="2" fill="#dedbd2" />
+
+  <!-- Body (Grey/Silver) -->
+  <rect x="6" y="12" width="16" height="13" fill="#b0c4de" />
+  
+  <!-- Stripes (Slate Grey) -->
+  <rect x="9" y="12" width="2" height="5" fill="#778899" />
+  <rect x="13" y="12" width="2" height="5" fill="#778899" />
+  <rect x="17" y="12" width="2" height="5" fill="#778899" />
+  
+  <!-- Chest (White bib) -->
+  <rect x="19" y="14" width="3" height="6" fill="#ffffff" />
+  
+  <!-- Paws (White socks) -->
+  <rect x="6" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="9" y="25" width="2" height="3" fill="#b0c4de" />
+  <rect x="15" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="18" y="25" width="2" height="3" fill="#b0c4de" />
+
+  <!-- Head -->
+  <rect x="15" y="4" width="11" height="9" fill="#b0c4de" />
+  
+  <!-- Ears -->
+  <rect x="16" y="1" width="2" height="3" fill="#b0c4de" />
+  <rect x="23" y="1" width="2" height="3" fill="#b0c4de" />
+  <!-- Ear insides (Pink) -->
+  <rect x="17" y="2" width="1" height="2" fill="#ff9eb5" />
+  <rect x="23" y="2" width="1" height="2" fill="#ff9eb5" />
+  
+  <!-- Eyes (Creative Gold) -->
+  <rect x="18" y="7" width="2" height="2" fill="#ffb703" />
+  <rect x="23" y="7" width="2" height="2" fill="#ffb703" />
+  <!-- Pupils -->
+  <rect x="19" y="7" width="1" height="2" fill="#000000" />
+  <rect x="24" y="7" width="1" height="2" fill="#000000" />
+  
+  <!-- Snout -->
+  <rect x="20" y="9" width="4" height="2" fill="#ffffff" />
+  <rect x="22" y="9" width="1" height="1" fill="#ff9eb5" /> <!-- Nose -->
+
+  <!-- Flowchart Painter Palette in hand -->
+  <rect x="22" y="15" width="6" height="5" fill="#f4f1de" rx="1" />
+  <!-- Color nodes on palette (representing ARIMA/LSTM blocks) -->
+  <rect x="23" y="16" width="1.5" height="1.5" fill="#e76f51" /> <!-- Red node -->
+  <rect x="25" y="16" width="1.5" height="1.5" fill="#2a9d8f" /> <!-- Green node -->
+  <rect x="24" y="18" width="1.5" height="1.5" fill="#4a90e2" /> <!-- Blue node -->
+  
+  <!-- Paint brush in other paw -->
+  <rect x="20" y="16" width="1" height="4" fill="#8b5a2b" /> <!-- Wooden handle -->
+  <rect x="20" y="14" width="1" height="2" fill="#000000" /> <!-- Brush head -->
+</svg>

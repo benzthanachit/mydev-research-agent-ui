@@ -24,7 +24,7 @@ async function getMarkdownFilesRecursively(dir: string, baseDir: string = dir): 
         const subFiles = await getMarkdownFilesRecursively(fullPath, baseDir);
         results.push(...subFiles);
       }
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+    } else if (entry.isFile() && (entry.name.endsWith(".md") || entry.name.endsWith(".tex"))) {
       const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, "/");
       const stats = await fs.stat(fullPath);
       results.push({

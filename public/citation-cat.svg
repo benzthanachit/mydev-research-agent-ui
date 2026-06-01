@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128" style="image-rendering: pixelated;">
+  <!-- Cat 6 - Citation Formatting Cat Pixel Art Sprite -->
+  <!-- Cute Ginger Gold Cat holding a stack of reference books -->
+  
+  <!-- Back / Tail -->
+  <rect x="2" y="15" width="2" height="7" fill="#c77dff" />
+  <rect x="4" y="14" width="2" height="2" fill="#e0aaff" />
+
+  <!-- Body (Ginger Gold) -->
+  <rect x="6" y="12" width="16" height="13" fill="#ffae19" />
+  
+  <!-- Stripes (Orange Red) -->
+  <rect x="9" y="12" width="2" height="5" fill="#f3722c" />
+  <rect x="13" y="12" width="2" height="5" fill="#f3722c" />
+  <rect x="17" y="12" width="2" height="5" fill="#f3722c" />
+  
+  <!-- Chest (White bib) -->
+  <rect x="19" y="14" width="3" height="6" fill="#ffffff" />
+  
+  <!-- Paws (White socks) -->
+  <rect x="6" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="9" y="25" width="2" height="3" fill="#ffae19" />
+  <rect x="15" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="18" y="25" width="2" height="3" fill="#ffae19" />
+
+  <!-- Head -->
+  <rect x="15" y="4" width="11" height="9" fill="#ffae19" />
+  
+  <!-- Ears -->
+  <rect x="16" y="1" width="2" height="3" fill="#ffae19" />
+  <rect x="23" y="1" width="2" height="3" fill="#ffae19" />
+  <!-- Ear insides (Pink) -->
+  <rect x="17" y="2" width="1" height="2" fill="#ff9eb5" />
+  <rect x="23" y="2" width="1" height="2" fill="#ff9eb5" />
+  
+  <!-- Eyes (Intelligent Purple) -->
+  <rect x="18" y="7" width="2" height="2" fill="#9b5de5" />
+  <rect x="23" y="7" width="2" height="2" fill="#9b5de5" />
+  <!-- Pupils -->
+  <rect x="19" y="7" width="1" height="2" fill="#000000" />
+  <rect x="24" y="7" width="1" height="2" fill="#000000" />
+  
+  <!-- Snout -->
+  <rect x="20" y="9" width="4" height="2" fill="#ffffff" />
+  <rect x="22" y="9" width="1" height="1" fill="#ff9eb5" /> <!-- Nose -->
+
+  <!-- Stack of reference books in paws -->
+  <rect x="22" y="14" width="6" height="3" fill="#e63946" /> <!-- Red book -->
+  <rect x="23" y="14" width="4" height="1" fill="#ffffff" />
+  <rect x="21" y="17" width="7" height="3" fill="#457b9d" /> <!-- Blue book -->
+  <rect x="22" y="17" width="5" height="1" fill="#ffffff" />
+  <rect x="23" y="20" width="8" height="3" fill="#f4a261" /> <!-- Yellow book -->
+  <rect x="24" y="20" width="6" height="1" fill="#ffffff" />
+</svg>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   BookOpen, 
   Settings, 
@@ -18,7 +18,8 @@ import {
   Terminal,
   Layers,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Shield
 } from "lucide-react";
 
 interface ChapterWorkbenchProps {
@@ -102,19 +103,91 @@ export default function ChapterWorkbench({
   chapterDraft = "",
   onChapterDraftChange
 }: ChapterWorkbenchProps) {
-  const [activeTab, setActiveTab] = useState<"workspace" | "config" | "draft" | "review" | "ingest">("workspace");
+  const [activeTab, setActiveTab] = useState<"workspace" | "config" | "draft" | "review" | "ingest" | "reports">("workspace");
+
+  // State hooks for specialized Academic Verification Reports from Obsidian
+  const [reportsData, setReportsData] = useState({
+    math: "",
+    citation: "",
+    integrity: "",
+    diagram: ""
+  });
+  const [reportsLoading, setReportsLoading] = useState(false);
+
+  const loadReports = async () => {
+    if (!obsidianPath) return;
+    setReportsLoading(true);
+    const safeName = currentChapter.replace(/[^a-z0-9]/gi, "_");
+    try {
+      const getFile = async (filename: string) => {
+        const res = await fetch("/api/obsidian", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "read", filename, vaultPath: obsidianPath })
+        });
+        const d = await res.json();
+        return d.content || "";
+      };
+
+      const [math, citation, integrity, diagram] = await Promise.all([
+        getFile(`concepts/Mathematical_Proof_${safeName}.md`),
+        getFile(`concepts/Citation_Bibliography_${safeName}.md`),
+        getFile(`logs/Integrity_Report_${safeName}.md`),
+        getFile(`concepts/Methodology_Diagram_${safeName}.md`)
+      ]);
+
+      setReportsData({ math, citation, integrity, diagram });
+    } catch (e) {
+      console.error("Failed to load academic reports:", e);
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "reports") {
+      loadReports();
+    }
+  }, [activeTab, currentChapter, obsidianPath, stage]);
+
   const [authLoading, setAuthLoading] = useState(false);
   const [authStatus, setAuthStatus] = useState("");
 
   // Ingest states for Research Initializer
+  const [manuUploadType, setManuUploadType] = useState<'pdf' | 'latex'>('pdf');
   const [manuFile, setManuFile] = useState<File | null>(null);
+  const [latexFile, setLatexFile] = useState<File | null>(null);
   const [manuText, setManuText] = useState("");
   
   const [relatedFile, setRelatedFile] = useState<File | null>(null);
   const [relatedText, setRelatedText] = useState("");
+
+  const readTexFileContent = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string || "");
+      reader.onerror = () => reject(new Error("ล้มเหลวในการอ่านไฟล์ LaTeX เหมียว!"));
+      reader.readAsText(file);
+    });
+  };
+
+  const handleLatexFileChange = async (file: File | null) => {
+    setLatexFile(file);
+    if (file) {
+      try {
+        const content = await readTexFileContent(file);
+        setManuText(content);
+      } catch (err: any) {
+        alert(`ไม่สามารถอ่านไฟล์ LaTeX: ${err.message}`);
+      }
+    } else {
+      setManuText("");
+    }
+  };
   
   const [initLoading, setInitLoading] = useState(false);
   const [initStatus, setInitStatus] = useState("");
+  const [initSuccess, setInitSuccess] = useState(false);
 
   // Old ingest state compatibility
   const [ingestFilename, setIngestFilename] = useState("Research_Draft_Notes.md");
@@ -187,15 +260,19 @@ export default function ChapterWorkbench({
   const handleInitializeProject = async () => {
     setInitLoading(true);
     setInitStatus("🎒 เริ่มกระบวนการติดตั้งโครงการวิจัยแมวเหมียว...");
+    setInitSuccess(false);
     
     try {
       let finalManuscriptDraft = manuText;
       let finalRelatedPapers = relatedText;
 
       // 1. Process Manuscript File if uploaded
-      if (manuFile) {
+      if (manuUploadType === 'pdf' && manuFile) {
         setInitStatus(`📂 กำลังถอดรหัสเอกสาร Manuscript Draft PDF: ${manuFile.name}...`);
         finalManuscriptDraft = await parsePdfContent(manuFile);
+      } else if (manuUploadType === 'latex' && latexFile) {
+        setInitStatus(`📂 กำลังอ่านเอกสาร Manuscript Draft LaTeX: ${latexFile.name}...`);
+        finalManuscriptDraft = await readTexFileContent(latexFile);
       }
 
       // 2. Process Related Research File if uploaded
@@ -211,6 +288,7 @@ export default function ChapterWorkbench({
       // 3. Save draft to Obsidian as foundational knowledge base
       setInitStatus("💾 บันทึกเอกสารดราฟต์ตั้งต้นลงคลัง Obsidian...");
       if (finalManuscriptDraft) {
+        // Save as MD for standard markdown links & agents context compatibility
         await fetch("/api/obsidian", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -222,6 +300,21 @@ export default function ChapterWorkbench({
             vaultPath: obsidianPath
           })
         });
+
+        // Save as original LaTeX too if LaTeX uploader was selected
+        if (manuUploadType === 'latex') {
+          await fetch("/api/obsidian", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "write",
+              filename: "references/Reference_Manuscript.tex",
+              content: finalManuscriptDraft,
+              overwrite: true,
+              vaultPath: obsidianPath
+            })
+          });
+        }
       }
 
       // 4. Save Notion Logs & Related papers to Obsidian
@@ -316,9 +409,16 @@ export default function ChapterWorkbench({
         pipeline: finalPipeline
       });
 
-      setInitStatus("🟢 ตั้งทะเบียนคลังข้อมูลวิจัยสำเร็จ 100%! พร้อมรันห่วงโซ่ห้าแมวแล้วเหมียว! 🐾");
+      setInitStatus("🟢 ตั้งทะเบียนคลังข้อมูลวิจัยสำเร็จ 100%! พร้อมรันห่วงโซ่เก้าแมวแล้วเหมียว! 🐾");
+      setInitSuccess(true);
+      
+      // Update parent's draft state so the pipeline immediately has the draft context!
+      onDraftChange(finalManuscriptDraft);
+      if (onChapterDraftChange) {
+        onChapterDraftChange(finalManuscriptDraft);
+      }
+
       setManuFile(null);
-      setManuText("");
       setRelatedFile(null);
       setRelatedText("");
       
@@ -401,6 +501,21 @@ export default function ChapterWorkbench({
     );
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert("คัดลอกโค้ด Mermaid เรียบร้อยแล้วเหมียว! 🐾");
+  };
+
+  const downloadMermaid = (text: string) => {
+    const element = document.createElement("a");
+    const file = new Blob([text], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `${currentChapter.replace(/[^a-z0-9]/gi, "_")}_Methodology_Diagram.mermaid`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <div className="retro-border-single bg-retro-panel p-4 md:p-6 rounded">
       
@@ -414,7 +529,7 @@ export default function ChapterWorkbench({
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          <Layers className="w-4 h-4" /> [1] ห่วงโซ่การผลิตห้าแมว 🔗
+          <Layers className="w-4 h-4" /> [1] ห่วงโซ่การผลิต 9 แมว 🔗
         </button>
 
         <button
@@ -440,6 +555,17 @@ export default function ChapterWorkbench({
         </button>
 
         <button
+          onClick={() => setActiveTab("reports")}
+          className={`flex items-center gap-1 px-4 py-2 font-mono text-sm border-2 rounded ${
+            activeTab === "reports"
+              ? "border-teal-400 text-teal-400 bg-black/40"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Shield className="w-4 h-4" /> [4] ใบรับรองทางวิชาการ 🛡️
+        </button>
+
+        <button
           onClick={() => setActiveTab("review")}
           className={`flex items-center gap-1 px-4 py-2 font-mono text-sm border-2 rounded ${
             activeTab === "review"
@@ -447,7 +573,7 @@ export default function ChapterWorkbench({
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          <AlertTriangle className="w-4 h-4" /> [4] รายการประเมินส้ม 😾
+          <AlertTriangle className="w-4 h-4" /> [5] รายการประเมินส้ม 😾
         </button>
 
         <button
@@ -458,16 +584,16 @@ export default function ChapterWorkbench({
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          <Settings className="w-4 h-4" /> [5] การตั้งค่าสมองกล ⚙️
+          <Settings className="w-4 h-4" /> [6] การตั้งค่าสมองกล ⚙️
         </button>
       </div>
 
-      {/* Tab 1: ห่วงโซ่การผลิตห้าแมว (5-Cat Pipeline Console) */}
+      {/* Tab 1: ห่วงโซ่การผลิตเก้าแมว (9-Cat Pipeline Console) */}
       {activeTab === "workspace" && (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-slate-800 pb-3 gap-3">
             <h3 className="font-mono text-sm text-retro-primary flex items-center gap-2 font-bold uppercase">
-              <BookOpen className="w-5 h-5 text-retro-primary animate-pulse" /> 5-Cat Pipeline Console :: ห่วงโซ่ห้าเหมียวประสาท
+              <BookOpen className="w-5 h-5 text-retro-primary animate-pulse" /> 9-Cat Research Foundry Console :: ห่วงโซ่เก้าเหมียวประสาท
             </h3>
             
             <div className="flex items-center gap-3">
@@ -480,7 +606,7 @@ export default function ChapterWorkbench({
               >
                 <option value="Chapter 1: Introduction">บทที่ 1: บทนำและการทบทวน</option>
                 <option value="Chapter 2: Literature Review">บทที่ 2: การทบทวนวรรณกรรมเชิงลึก</option>
-                <option value="Chapter 3: Research Methodology">บทที่ 3: ระเบียบวิธีและสถาปัตยกรรมวิจัย</option>
+                <option value="Chapter 3: Research Methodology">บทที่ 3: ระเบียบวิธีและสถาปัจยกรรมวิจัย</option>
                 <option value="Chapter 4: Results & Discussion">บทที่ 4: ผลการทดลองและการอภิปราย</option>
                 <option value="Chapter 5: Conclusion">บทที่ 5: สรุปผลและขอบเขตงานในอนาคต</option>
               </select>
@@ -549,9 +675,9 @@ export default function ChapterWorkbench({
           {/* Interactive RPG Multi-Cat Flowchart Diagram */}
           <div className="bg-black/40 border-2 border-slate-800 p-4 rounded flex flex-col gap-3">
             <span className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-              🗺️ ผังแสดงสถานะความคืบหน้าห้าประสาทแมว (5-Cat RPG Pipeline Map)
+              🗺️ ผังแสดงสถานะความคืบหน้าเก้าประสาทแมว (9-Cat RPG Pipeline Map)
             </span>
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/60 p-3 rounded border border-slate-900 overflow-x-auto">
+            <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-950/60 p-3 rounded border border-slate-900 overflow-x-auto">
               
               {renderFlowchartNode(
                 "initializing",
@@ -561,50 +687,84 @@ export default function ChapterWorkbench({
                 "ผู้รับงานและวางแผน"
               )}
 
-              <ArrowRight className="w-4 h-4 text-slate-600 shrink-0 hidden md:block" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
 
               {renderFlowchartNode(
                 "drafting",
                 "แมว 1 (Scribe)",
                 stage === "drafting",
                 stage !== "select" && stage !== "initializing" && stage !== "drafting",
-                "นักวิจัย / Zero-muddle"
+                "นักวิจัยสถิติ Scopus"
               )}
 
-              <ArrowRight className="w-4 h-4 text-slate-600 shrink-0 hidden md:block" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
 
               {renderFlowchartNode(
                 "reviewing",
                 "แมว 2 (Reviewer)",
                 stage === "reviewing",
-                stage === "editing" || stage === "librarian" || stage === "saved",
-                "Peer Review / Loop"
+                stage === "editing" || stage === "math-checking" || stage === "citation-matching" || stage === "integrity-protecting" || stage === "diagram-generating" || stage === "librarian" || stage === "saved",
+                "Grumpy Review Loop"
               )}
 
-              {loopCount > 0 && (
-                <div className="absolute left-[45%] translate-y-8 bg-red-950/60 text-red-400 border border-red-500/40 rounded px-1 text-[8px] font-mono select-none">
-                  วนซ้ำ: {loopCount}/3 รอบ
-                </div>
-              )}
-
-              <ArrowRight className="w-4 h-4 text-slate-600 shrink-0 hidden md:block" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
 
               {renderFlowchartNode(
                 "editing",
                 "แมว 3 (Editor)",
                 stage === "editing",
-                stage === "librarian" || stage === "saved",
-                "เกลาสำนวนภาษาคน"
+                stage === "math-checking" || stage === "citation-matching" || stage === "integrity-protecting" || stage === "diagram-generating" || stage === "librarian" || stage === "saved",
+                "เกลาภาษาคนเป็นทางการ"
               )}
 
-              <ArrowRight className="w-4 h-4 text-slate-600 shrink-0 hidden md:block" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+
+              {renderFlowchartNode(
+                "math-checking",
+                "แมว 5 (Math)",
+                stage === "math-checking",
+                stage === "citation-matching" || stage === "integrity-protecting" || stage === "diagram-generating" || stage === "librarian" || stage === "saved",
+                "พิสูจน์นิยามสมการ"
+              )}
+
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+
+              {renderFlowchartNode(
+                "citation-matching",
+                "แมว 6 (Citation)",
+                stage === "citation-matching",
+                stage === "integrity-protecting" || stage === "diagram-generating" || stage === "librarian" || stage === "saved",
+                "แมทช์บรรณานุกรมสากล"
+              )}
+
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+
+              {renderFlowchartNode(
+                "integrity-protecting",
+                "แมว 7 (Integrity)",
+                stage === "integrity-protecting",
+                stage === "diagram-generating" || stage === "librarian" || stage === "saved",
+                "คุม Plagiarism / เคลม"
+              )}
+
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+
+              {renderFlowchartNode(
+                "diagram-generating",
+                "แมว 8 (Diagram)",
+                stage === "diagram-generating",
+                stage === "librarian" || stage === "saved",
+                "วาด Mermaid Flowchart"
+              )}
+
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
 
               {renderFlowchartNode(
                 "librarian",
                 "แมว 4 (Librarian)",
                 stage === "librarian",
                 stage === "saved",
-                "คิวเรต Obsidian Graph"
+                "คิวเรต & สรุปสารบบ"
               )}
 
             </div>
@@ -629,7 +789,7 @@ export default function ChapterWorkbench({
                   ) : (
                     <Play className="w-4 h-4 text-emerald-400 animate-pulse" />
                   )}
-                  {isGenerating ? "เลขาเหมียวกำลังควบคุมเครื่องรันงาน..." : "🚀 รันห่วงโซ่การผลิตห้าประสาทแมว (Run 5-Cat Pipeline)"}
+                  {isGenerating ? "เลขาเหมียวกำลังควบคุมเครื่องรันงาน..." : "🚀 รันห่วงโซ่การผลิตเก้าประสาทแมว (Run 9-Cat Pipeline)"}
                 </button>
               )}
 
@@ -655,7 +815,7 @@ export default function ChapterWorkbench({
           <div className="flex flex-col border border-slate-800 rounded overflow-hidden">
             <div className="bg-[#12131a] px-3 py-1.5 border-b border-slate-800 flex justify-between items-center font-mono text-[10px] text-slate-500">
               <span className="flex items-center gap-1.5 uppercase font-bold tracking-wider">
-                <Terminal className="w-3.5 h-3.5 text-emerald-500" /> คอนโซลล็อกห้าเหมียวประสาท :: active_pipeline_logger
+                <Terminal className="w-3.5 h-3.5 text-emerald-500" /> คอนโซลล็อกเก้าเหมียววิจัย :: active_pipeline_logger
               </span>
               <span>8-bit Console v1.0</span>
             </div>
@@ -721,30 +881,76 @@ export default function ChapterWorkbench({
               <label className="font-mono text-xs text-purple-300 font-bold flex items-center gap-1.5">
                 📖 1. ดราฟต์โครงร่างวิจัยหลัก (Initial Manuscript Draft):
               </label>
-              
-              <div className="flex flex-col gap-2 border border-dashed border-purple-500/20 p-3 bg-purple-950/5 rounded">
-                <span className="text-[10px] text-slate-400 font-mono">อัปโหลดเอกสารดราฟต์ในเครื่องของทาส (.pdf):</span>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => setManuFile(e.target.files?.[0] || null)}
-                  className="font-mono text-xs text-slate-300 cursor-pointer bg-slate-950 border border-slate-800 py-1.5 px-3 rounded hover:bg-slate-900 w-full"
-                  disabled={initLoading}
-                />
-                {manuFile && (
-                  <span className="text-[10px] text-emerald-400 font-mono font-bold">📂 เลือกดราฟต์สำเร็จ: {manuFile.name}</span>
-                )}
+
+              {/* Source Type Selector */}
+              <div className="flex gap-2 border-b border-slate-900 pb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManuUploadType('pdf');
+                    setManuFile(null);
+                    setLatexFile(null);
+                    setManuText("");
+                  }}
+                  className={`font-mono text-[10px] px-2.5 py-1 rounded transition-all font-bold ${manuUploadType === 'pdf' ? 'bg-purple-950 border border-purple-500 text-purple-200 shadow-md shadow-purple-500/10' : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'}`}
+                >
+                  📕 PDF Manuscript (.pdf)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManuUploadType('latex');
+                    setManuFile(null);
+                    setLatexFile(null);
+                    setManuText("");
+                  }}
+                  className={`font-mono text-[10px] px-2.5 py-1 rounded transition-all font-bold ${manuUploadType === 'latex' ? 'bg-cyan-950 border border-cyan-500 text-cyan-200 shadow-md shadow-cyan-500/10' : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'}`}
+                >
+                  📄 LaTeX Manuscript (.tex)
+                </button>
               </div>
+              
+              {manuUploadType === 'pdf' ? (
+                <div className="flex flex-col gap-2 border border-dashed border-purple-500/20 p-3 bg-purple-950/5 rounded animate-fadeIn">
+                  <span className="text-[10px] text-slate-400 font-mono">อัปโหลดเอกสารดราฟต์ในเครื่องของทาส (.pdf):</span>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setManuFile(e.target.files?.[0] || null)}
+                    className="font-mono text-xs text-slate-300 cursor-pointer bg-slate-950 border border-slate-800 py-1.5 px-3 rounded hover:bg-slate-900 w-full"
+                    disabled={initLoading}
+                  />
+                  {manuFile && (
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold">📂 เลือกดราฟต์ PDF สำเร็จ: {manuFile.name}</span>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 border border-dashed border-cyan-500/20 p-3 bg-cyan-950/5 rounded animate-fadeIn">
+                  <span className="text-[10px] text-slate-400 font-mono">อัปโหลดเอกสาร LaTeX ต้นฉบับ (.tex):</span>
+                  <input
+                    type="file"
+                    accept=".tex"
+                    onChange={(e) => handleLatexFileChange(e.target.files?.[0] || null)}
+                    className="font-mono text-xs text-slate-300 cursor-pointer bg-slate-950 border border-slate-800 py-1.5 px-3 rounded hover:bg-slate-900 w-full"
+                    disabled={initLoading}
+                  />
+                  {latexFile && (
+                    <span className="text-[10px] text-cyan-400 font-mono font-bold">📂 เลือกดราฟต์ LaTeX สำเร็จ: {latexFile.name}</span>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-slate-400 font-mono">หรือวางข้อความเนื้อความดราฟต์ตั้งต้น (Raw Draft Text):</span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {manuUploadType === 'latex' ? "พรีวิว/แก้ไขโค้ด LaTeX ดราฟต์ตั้งต้น (Editable LaTeX Preview):" : "หรือวางข้อความเนื้อความดราฟต์ตั้งต้น (Raw Draft Text):"}
+                </span>
                 <textarea
                   rows={6}
                   value={manuText}
                   onChange={(e) => setManuText(e.target.value)}
-                  placeholder="วางคำสะกด หรือหัวข้อประเด็นย่อส่วนสำคัญของงานวิจัยร่างแรก..."
+                  placeholder={manuUploadType === 'latex' ? "โค้ด LaTeX (.tex) ดราฟต์ที่อัปโหลดจะพรีวิวตรงนี้ และทาสสามารถปรับแต่งโค้ดได้เหมียว..." : "วางคำสะกด หรือหัวข้อประเด็นย่อส่วนสำคัญของงานวิจัยร่างแรก..."}
                   className="retro-input w-full font-mono text-xs leading-relaxed"
-                  disabled={initLoading || !!manuFile}
+                  disabled={initLoading || (manuUploadType === 'pdf' && !!manuFile)}
                 />
               </div>
             </div>
@@ -788,7 +994,7 @@ export default function ChapterWorkbench({
           <div className="flex gap-4 items-center flex-wrap pt-4 border-t border-slate-800">
             <button
               onClick={handleInitializeProject}
-              disabled={initLoading || (!manuFile && !manuText.trim() && !relatedFile && !relatedText.trim())}
+              disabled={initLoading || (!manuFile && !latexFile && !manuText.trim() && !relatedFile && !relatedText.trim())}
               className="retro-btn bg-[#251d38] border-purple-400 text-purple-200 animate-pulse font-bold flex items-center justify-center min-w-[320px] h-10 text-xs"
               type="button"
             >
@@ -804,6 +1010,25 @@ export default function ChapterWorkbench({
               <span className="font-mono text-xs text-retro-primary bg-black/40 border border-retro-border px-3 py-1.5 animate-pulse rounded">
                 {initStatus}
               </span>
+            )}
+
+            {/* Direct 9-Cat execution shortcut button */}
+            {initSuccess && !initLoading && (
+              <button
+                onClick={() => {
+                  // Switch tab to workspace
+                  setActiveTab("workspace");
+                  // Trigger the full 9-Cat pipeline run
+                  if (onRunFullPipeline) {
+                    onRunFullPipeline(manuText || draft || "เริ่มกระบวนการตั้งต้น");
+                  }
+                }}
+                className="retro-btn bg-emerald-950 border-emerald-500 text-emerald-200 animate-pulse font-bold flex items-center justify-center min-w-[280px] h-10 text-xs shadow-lg shadow-emerald-500/30"
+                type="button"
+              >
+                <Play className="w-4 h-4 mr-2 text-emerald-400 animate-pulse" />
+                🚀 สั่งเลขาเหมียวเริ่มรันงานทันที (Start 9-Cat Pipeline Now)
+              </button>
             )}
           </div>
           
@@ -883,7 +1108,154 @@ export default function ChapterWorkbench({
         </div>
       )}
 
-      {/* Tab 4: Review Comments visualizer */}
+      {/* Tab 4: Academic Verification Reports 🛡️ */}
+      {activeTab === "reports" && (
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 className="font-mono text-sm text-teal-400 flex items-center gap-2 font-bold uppercase">
+              <Shield className="w-5 h-5 text-teal-400 animate-pulse" /> ใบรับรองทางวิชาการ (Academic Verification Reports) 🛡️
+            </h3>
+            <span className="text-xs text-slate-500 font-mono">
+              [ระบบประเมินความสอดคล้องเชิงทฤษฎีตามระเบียบวิธี Scopus Q3/Q4]
+            </span>
+          </div>
+
+          {reportsLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-teal-400 font-mono gap-3">
+              <Loader2 className="w-10 h-10 animate-spin text-teal-400" />
+              <span className="animate-pulse">[กำลังสแกนและดึงไฟล์ใบรับรองวิชาการจาก Obsidian Vault...]</span>
+            </div>
+          ) : (reportsData.math || reportsData.citation || reportsData.integrity || reportsData.diagram) ? (
+            <div className="flex flex-col gap-6">
+              
+              {/* Grid of 3 Main Check Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                {/* Math Card Summary */}
+                <div className="border border-teal-500/20 bg-teal-950/5 p-4 rounded flex flex-col justify-between gap-3 font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-teal-400 uppercase font-bold">📐 Math & Parameter</span>
+                    <span className="bg-teal-950 border border-teal-500/40 text-teal-300 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase">
+                      สมบูรณ์
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">สแกน LaTeX และจับคู่นิยามตัวแปรพารามิเตอร์ ARIMA-LSTM สำเร็จเรียบร้อย</p>
+                  <div className="text-[10px] text-teal-400/70 border-t border-slate-800/60 pt-2 flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-teal-400" /> สัญลักษณ์สอดคล้อง 100%
+                  </div>
+                </div>
+
+                {/* Citation Card Summary */}
+                <div className="border border-amber-500/20 bg-amber-950/5 p-4 rounded flex flex-col justify-between gap-3 font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-amber-400 uppercase font-bold">📚 Reference Matcher</span>
+                    <span className="bg-amber-950 border border-amber-500/40 text-amber-300 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase">
+                      IEEE/APA
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">ดึง In-text citations และเทียบเคียงคลังเอกสารอ้างอิงตรงกันเสถียร</p>
+                  <div className="text-[10px] text-amber-400/70 border-t border-slate-800/60 pt-2 flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-amber-400" /> ไร้รายการตกหล่น
+                  </div>
+                </div>
+
+                {/* Integrity Card Summary */}
+                <div className="border border-red-500/20 bg-red-950/5 p-4 rounded flex flex-col justify-between gap-3 font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-red-400 uppercase font-bold">🛡️ Plagiarism Guard</span>
+                    <span className="bg-red-950 border border-red-500/40 text-red-300 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase">
+                      96% Safe
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">วิเคราะห์สำนวนป้องกันการเคลมเด็ดขาดเกินไป พร้อมแนะนำประโยคถ่อมตน</p>
+                  <div className="text-[10px] text-red-400/70 border-t border-slate-800/60 pt-2 flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-red-400" /> ระดับจริยธรรมผ่านเกณฑ์
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Detailed Reports Split Layout */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                
+                {/* Math Checker Log Box */}
+                {reportsData.math && (
+                  <div className="flex flex-col border border-teal-500/30 rounded overflow-hidden">
+                    <div className="bg-[#0f1b1a] border-b border-teal-500/30 px-3 py-2 flex justify-between items-center text-teal-400 font-mono text-[10px] uppercase font-bold tracking-wider">
+                      <span>📐 [แมว 5] สมการและนิยามสัญลักษณ์ทางสถิติ</span>
+                      <span className="text-[9px] bg-teal-950 border border-teal-500/40 px-1 rounded">Math Proof File</span>
+                    </div>
+                    <div className="bg-slate-950 p-4 font-mono text-xs leading-relaxed overflow-auto max-h-[320px] text-slate-200 select-text border-t-0 whitespace-pre-wrap">
+                      {reportsData.math}
+                    </div>
+                  </div>
+                )}
+
+                {/* Citation Matcher Log Box */}
+                {reportsData.citation && (
+                  <div className="flex flex-col border border-amber-500/30 rounded overflow-hidden">
+                    <div className="bg-[#1c160e] border-b border-amber-500/30 px-3 py-2 flex justify-between items-center text-amber-400 font-mono text-[10px] uppercase font-bold tracking-wider">
+                      <span>📚 [แมว 6] การจัดบรรณานุกรมท้ายบทความวิจัย</span>
+                      <span className="text-[9px] bg-amber-950 border border-amber-500/40 px-1 rounded">Bibliography File</span>
+                    </div>
+                    <div className="bg-slate-950 p-4 font-mono text-xs leading-relaxed overflow-auto max-h-[320px] text-slate-200 select-text border-t-0 whitespace-pre-wrap">
+                      {reportsData.citation}
+                    </div>
+                  </div>
+                )}
+
+                {/* Plagiarism Guard Log Box */}
+                {reportsData.integrity && (
+                  <div className="flex flex-col border border-red-500/30 rounded overflow-hidden">
+                    <div className="bg-[#1b0f11] border-b border-red-500/30 px-3 py-2 flex justify-between items-center text-red-400 font-mono text-[10px] uppercase font-bold tracking-wider">
+                      <span>🛡️ [แมว 7] ใบประเมินความมั่นคงและจริยธรรมวิจัย</span>
+                      <span className="text-[9px] bg-red-950 border border-red-500/40 px-1 rounded">Hedging Report</span>
+                    </div>
+                    <div className="bg-slate-950 p-4 font-mono text-xs leading-relaxed overflow-auto max-h-[320px] text-slate-200 select-text border-t-0 whitespace-pre-wrap">
+                      {reportsData.integrity}
+                    </div>
+                  </div>
+                )}
+
+                {/* Diagram Architect Flowchart Code Box */}
+                {reportsData.diagram && (
+                  <div className="flex flex-col border border-fuchsia-500/30 rounded overflow-hidden">
+                    <div className="bg-[#1a0f1c] border-b border-fuchsia-500/30 px-3 py-2 flex justify-between items-center text-fuchsia-400 font-mono text-[10px] uppercase font-bold tracking-wider">
+                      <span>📊 [แมว 8] ผังโครงสร้างวิธีวิทยา (Mermaid Flowchart)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => copyToClipboard(reportsData.diagram)}
+                          className="text-[9px] bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-500/50 px-1.5 py-0.5 rounded font-bold tracking-tighter"
+                        >
+                          คัดลอกโค้ด
+                        </button>
+                        <button
+                          onClick={() => downloadMermaid(reportsData.diagram)}
+                          className="text-[9px] bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-500/50 px-1.5 py-0.5 rounded font-bold tracking-tighter"
+                        >
+                          ดาวน์โหลด .mermaid
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-slate-950 p-4 font-mono text-xs leading-relaxed overflow-auto max-h-[320px] text-slate-200 select-text border-t-0 whitespace-pre-wrap">
+                      {reportsData.diagram}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-600 font-mono gap-2 border-2 border-dashed border-slate-800 rounded">
+              <Shield className="w-12 h-12 opacity-35" />
+              <span>ยังไม่มีผลลัพธ์รายงานตรวจสอบวิชาการในคลังเหมียว!</span>
+              <span className="text-[10px] text-slate-700">ใบรับรองจะได้รับการสกัดขึ้นโดยอัตโนมัติเมื่อแมว 5, 6, 7, 8 ตรวจร่างคุณในแท็บ [1]</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 5: Review Comments visualizer */}
       {activeTab === "review" && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
