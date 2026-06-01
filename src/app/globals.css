@@ -1,0 +1,235 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+:root {
+  --background: #111219;
+  --foreground: #e2e8f0;
+  
+  /* Retro Palette */
+  --retro-bg: #1c1d27;
+  --retro-panel: #262837;
+  --retro-panel-light: #34374c;
+  --retro-border: #4d5175;
+  --retro-primary: #e6c387; /* Neon Golden Amber */
+  --retro-secondary: #7e9cd8; /* Blue */
+  --retro-accent: #ff5d62; /* Red Rose */
+  --retro-success: #76946a; /* Moss Green */
+  --retro-terminal: #36a374; /* Terminal Green */
+  --retro-shadow: #0b0c10;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-retro-bg: var(--retro-bg);
+  --color-retro-panel: var(--retro-panel);
+  --color-retro-panel-light: var(--retro-panel-light);
+  --color-retro-border: var(--retro-border);
+  --color-retro-primary: var(--retro-primary);
+  --color-retro-secondary: var(--retro-secondary);
+  --color-retro-accent: var(--retro-accent);
+  --color-retro-success: var(--retro-success);
+  --color-retro-terminal: var(--retro-terminal);
+  
+  --font-press-start: "Press Start 2P", monospace;
+  --font-vt323: "VT323", monospace;
+  --font-courier: "Courier Prime", monospace;
+}
+
+/* Base style resets with retro elements */
+body {
+  background-color: var(--retro-bg);
+  color: var(--foreground);
+  font-family: "VT323", "Courier Prime", monospace;
+  image-rendering: pixelated;
+  overflow-x: hidden;
+}
+
+/* NES / RPG double border containers */
+.retro-border-double {
+  border: 4px double var(--retro-border);
+  background-color: var(--retro-panel);
+  box-shadow: 6px 6px 0px var(--retro-shadow);
+  image-rendering: pixelated;
+}
+
+.retro-border-single {
+  border: 4px solid var(--retro-border);
+  background-color: var(--retro-panel);
+  box-shadow: 4px 4px 0px var(--retro-shadow);
+}
+
+.retro-border-accent {
+  border: 4px double var(--retro-accent);
+  background-color: var(--retro-panel);
+  box-shadow: 6px 6px 0px var(--retro-shadow);
+}
+
+.retro-border-primary {
+  border: 4px double var(--retro-primary);
+  background-color: var(--retro-panel);
+  box-shadow: 6px 6px 0px var(--retro-shadow);
+}
+
+.retro-border-terminal {
+  border: 4px solid var(--retro-terminal);
+  background-color: #0b0c10;
+  box-shadow: 4px 4px 0px var(--retro-shadow);
+}
+
+/* Retro buttons */
+.retro-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--retro-border);
+  background-color: var(--retro-panel-light);
+  color: var(--foreground);
+  padding: 8px 16px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  text-shadow: 1px 1px 0px #000;
+  box-shadow: 4px 4px 0px var(--retro-shadow);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  user-select: none;
+  position: relative;
+}
+
+.retro-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--retro-shadow);
+}
+
+.retro-btn:hover {
+  background-color: var(--retro-primary);
+  color: #111219;
+  border-color: #fff;
+  text-shadow: none;
+}
+
+.retro-btn-accent {
+  background-color: var(--retro-accent);
+}
+.retro-btn-accent:hover {
+  background-color: #ff7a7f;
+  color: #fff;
+}
+
+.retro-btn-success {
+  background-color: var(--retro-success);
+}
+.retro-btn-success:hover {
+  background-color: #8fae82;
+  color: #fff;
+}
+
+.retro-btn-secondary {
+  background-color: var(--retro-secondary);
+}
+.retro-btn-secondary:hover {
+  background-color: #a3be8c;
+  color: #111219;
+}
+
+/* Pixel Rendering Utilities */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* CRT Scanlines Overlay */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+/* Screen Flicker */
+@keyframes flicker {
+  0% { opacity: 0.98; }
+  50% { opacity: 1; }
+  100% { opacity: 0.99; }
+}
+
+.crt-flicker {
+  animation: flicker 0.15s infinite;
+}
+
+/* Text Typing Cursor */
+.cursor-blink::after {
+  content: "█";
+  animation: blink 0.8s steps(2, start) infinite;
+  color: var(--retro-primary);
+  margin-left: 4px;
+}
+
+.cursor-blink-green::after {
+  content: "▒";
+  animation: blink 1s steps(2, start) infinite;
+  color: var(--retro-terminal);
+  margin-left: 4px;
+}
+
+@keyframes blink {
+  to { visibility: hidden; }
+}
+
+/* Cat Walking & Idle Animations */
+@keyframes cat-walk {
+  0% { transform: translateX(-10%) scaleX(1); }
+  45% { transform: translateX(500%) scaleX(1); }
+  50% { transform: translateX(500%) scaleX(-1); }
+  95% { transform: translateX(-10%) scaleX(-1); }
+  100% { transform: translateX(-10%) scaleX(1); }
+}
+
+.animate-cat-walk {
+  animation: cat-walk 28s linear infinite;
+}
+
+@keyframes bobbing {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-bob {
+  animation: bobbing 1.5s ease-in-out infinite;
+}
+
+/* Retro Input fields */
+.retro-input {
+  border: 4px solid var(--retro-border);
+  background-color: #0b0c10;
+  color: var(--foreground);
+  font-family: "VT323", monospace;
+  font-size: 18px;
+  padding: 6px 12px;
+  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.8);
+  outline: none;
+}
+
+.retro-input:focus {
+  border-color: var(--retro-primary);
+  color: #fff;
+}
+
+/* Parchment / Citation Scroll effect */
+.parchment {
+  background-color: #f4edd4;
+  color: #3b2f2f;
+  border: 4px solid #8f7457;
+  box-shadow: inset 0 0 40px rgba(139, 69, 19, 0.15), 4px 4px 0px var(--retro-shadow);
+  font-family: "Courier Prime", monospace;
+}

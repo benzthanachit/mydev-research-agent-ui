@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128" style="image-rendering: pixelated;">
+  <!-- The Librarian Cat (Agent 4) Pixel Art Sprite -->
+  <!-- Calico Cat with spots and a Monocle -->
+  
+  <!-- Back / Tail -->
+  <rect x="2" y="15" width="2" height="7" fill="#e07a2c" />
+  <rect x="4" y="14" width="2" height="2" fill="#1c1d27" />
+
+  <!-- Body (Calico: base white with orange and black spots) -->
+  <rect x="6" y="12" width="16" height="13" fill="#ffffff" />
+  
+  <!-- Calico Spots (Orange & Black) -->
+  <rect x="8" y="12" width="4" height="4" fill="#e07a2c" />
+  <rect x="12" y="14" width="3" height="4" fill="#1c1d27" />
+  <rect x="7" y="17" width="5" height="5" fill="#e07a2c" />
+  <rect x="15" y="19" width="4" height="4" fill="#1c1d27" />
+  
+  <!-- Paws (White socks) -->
+  <rect x="6" y="25" width="2" height="3" fill="#eeeeee" />
+  <rect x="9" y="25" width="2" height="3" fill="#eeeeee" />
+  <rect x="15" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="18" y="25" width="2" height="3" fill="#eeeeee" />
+
+  <!-- Head (White with orange ear, black ear) -->
+  <rect x="15" y="5" width="11" height="9" fill="#ffffff" />
+  <rect x="15" y="5" width="4" height="3" fill="#e07a2c" /> <!-- Orange patch -->
+  <rect x="22" y="5" width="4" height="3" fill="#1c1d27" /> <!-- Black patch -->
+  
+  <!-- Ears -->
+  <rect x="16" y="2" width="2" height="3" fill="#e07a2c" />
+  <rect x="23" y="2" width="2" height="3" fill="#1c1d27" />
+  <!-- Ear insides -->
+  <rect x="17" y="3" width="1" height="2" fill="#ff9eb5" />
+  <rect x="24" y="3" width="1" height="2" fill="#ff9eb5" />
+  
+  <!-- Eyes -->
+  <rect x="18" y="7" width="2" height="2" fill="#7e9cd8" /> <!-- Blue/slate eye -->
+  <rect x="23" y="7" width="2" height="2" fill="#7e9cd8" />
+  <!-- Pupils -->
+  <rect x="19" y="7" width="1" height="2" fill="#000000" />
+  <rect x="23" y="7" width="1" height="2" fill="#000000" />
+  
+  <!-- Monocle (Gold wire on left eye with chain) -->
+  <circle cx="19" cy="8" r="2.2" fill="none" stroke="#e6c387" stroke-width="0.8" />
+  <line x1="17" y1="9" x2="15" y2="14" stroke="#e6c387" stroke-width="0.5" /> <!-- Monocle chain -->
+
+  <!-- Snout -->
+  <rect x="20" y="9" width="3" height="2" fill="#ffffff" />
+  <rect x="21" y="9" width="1" height="1" fill="#ff9eb5" /> <!-- Nose -->
+
+  <!-- Miniature Book (being held) -->
+  <rect x="21" y="15" width="5" height="6" fill="#7e9cd8" /> <!-- Book cover -->
+  <rect x="22" y="16" width="3" height="4" fill="#f4edd4" /> <!-- Book pages -->
+  <rect x="23" y="17" width="2" height="1" fill="#3b2f2f" /> <!-- Book text line -->
+  <rect x="23" y="19" width="2" height="1" fill="#3b2f2f" />
+</svg>

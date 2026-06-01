@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128" style="image-rendering: pixelated;">
+  <!-- The Scribe Cat (Agent 2) Pixel Art Sprite -->
+  <!-- Orange Tabby Cat with feather quill -->
+  
+  <!-- Back / Tail -->
+  <rect x="2" y="15" width="2" height="7" fill="#c06014" />
+  <rect x="4" y="14" width="2" height="2" fill="#e07a2c" />
+
+  <!-- Body (Orange Ginger) -->
+  <rect x="6" y="12" width="16" height="13" fill="#e07a2c" />
+  
+  <!-- Orange Stripes -->
+  <rect x="9" y="12" width="2" height="5" fill="#a04000" />
+  <rect x="13" y="12" width="2" height="5" fill="#a04000" />
+  <rect x="17" y="12" width="2" height="5" fill="#a04000" />
+  
+  <!-- Chest (White bib) -->
+  <rect x="19" y="14" width="3" height="6" fill="#ffffff" />
+  
+  <!-- Paws (Ginger with white socks) -->
+  <rect x="6" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="9" y="25" width="2" height="3" fill="#e07a2c" />
+  <rect x="15" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="18" y="25" width="2" height="3" fill="#e07a2c" />
+
+  <!-- Head -->
+  <rect x="15" y="4" width="11" height="9" fill="#e07a2c" />
+  
+  <!-- Ears -->
+  <rect x="16" y="1" width="2" height="3" fill="#e07a2c" />
+  <rect x="23" y="1" width="2" height="3" fill="#e07a2c" />
+  <!-- Ear insides -->
+  <rect x="17" y="2" width="1" height="2" fill="#ff9eb5" />
+  <rect x="23" y="2" width="1" height="2" fill="#ff9eb5" />
+  
+  <!-- Eyes (Deep Amber / Golden) -->
+  <rect x="18" y="7" width="2" height="2" fill="#e6c387" />
+  <rect x="23" y="7" width="2" height="2" fill="#e6c387" />
+  <!-- Pupils -->
+  <rect x="19" y="7" width="1" height="2" fill="#000000" />
+  <rect x="24" y="7" width="1" height="2" fill="#000000" />
+  
+  <!-- Snout -->
+  <rect x="20" y="9" width="4" height="2" fill="#ffffff" />
+  <rect x="22" y="9" width="1" height="1" fill="#ff9eb5" /> <!-- Nose -->
+
+  <!-- Quill feather in hand -->
+  <rect x="23" y="16" width="3" height="3" fill="#eeeeee" /> <!-- Feather quill base -->
+  <rect x="25" y="12" width="2" height="5" fill="#dddddd" />
+  <rect x="26" y="8" width="1" height="5" fill="#cccccc" />
+  <rect x="22" y="19" width="2" height="2" fill="#0b0c10" /> <!-- Tiny inkwell -->
+</svg>

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128" style="image-rendering: pixelated;">
+  <!-- Project Meow-nager (Agent 1) Pixel Art Sprite -->
+  <!-- Grey Tabby Cat with Glasses and Red Tie -->
+  
+  <!-- Back / Tail -->
+  <rect x="3" y="16" width="2" height="6" fill="#525464" />
+  <rect x="4" y="15" width="2" height="2" fill="#525464" />
+
+  <!-- Body (Grey Tabby) -->
+  <rect x="7" y="13" width="15" height="12" fill="#717385" />
+  
+  <!-- Tabby Stripes (Dark Grey) -->
+  <rect x="10" y="13" width="2" height="4" fill="#3a3b45" />
+  <rect x="14" y="13" width="2" height="4" fill="#3a3b45" />
+  <rect x="18" y="13" width="2" height="4" fill="#3a3b45" />
+  
+  <!-- Chest / White shirt collar -->
+  <rect x="19" y="15" width="4" height="6" fill="#ffffff" />
+  <!-- Red Tie -->
+  <rect x="21" y="17" width="2" height="6" fill="#ff5d62" />
+  <rect x="20" y="21" width="4" height="1" fill="#ff5d62" />
+  
+  <!-- Paws (White boots) -->
+  <rect x="7" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="10" y="25" width="2" height="3" fill="#eeeeee" />
+  <rect x="16" y="25" width="2" height="3" fill="#ffffff" />
+  <rect x="19" y="25" width="2" height="3" fill="#eeeeee" />
+
+  <!-- Head -->
+  <rect x="16" y="4" width="11" height="9" fill="#717385" />
+  <!-- Head stripes -->
+  <rect x="19" y="4" width="1" height="3" fill="#3a3b45" />
+  <rect x="21" y="4" width="1" height="3" fill="#3a3b45" />
+  <rect x="23" y="4" width="1" height="3" fill="#3a3b45" />
+  
+  <!-- Ears -->
+  <rect x="17" y="1" width="2" height="3" fill="#717385" />
+  <rect x="24" y="1" width="2" height="3" fill="#717385" />
+  <!-- Ear insides -->
+  <rect x="18" y="2" width="1" height="2" fill="#ff9eb5" />
+  <rect x="24" y="2" width="1" height="2" fill="#ff9eb5" />
+  
+  <!-- Retro Glasses (Yellow frames) -->
+  <rect x="18" y="6" width="9" height="3" fill="none" stroke="#e6c387" stroke-width="1" />
+  <rect x="22" y="7" width="1" height="1" fill="#e6c387" /> <!-- Bridge -->
+  
+  <!-- Eyes behind glasses (Green) -->
+  <rect x="19" y="7" width="2" height="1" fill="#76946a" />
+  <rect x="24" y="7" width="2" height="1" fill="#76946a" />
+
+  <!-- Snout -->
+  <rect x="22" y="9" width="3" height="2" fill="#ffffff" />
+  <rect x="23" y="9" width="1" height="1" fill="#ff9eb5" /> <!-- Nose -->
+  
+  <!-- Cheeks (Blushing yellow/orange) -->
+  <rect x="17" y="9" width="1" height="1" fill="#e6c387" />
+  <rect x="26" y="9" width="1" height="1" fill="#e6c387" />
+</svg>
